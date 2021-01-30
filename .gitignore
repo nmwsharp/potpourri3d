@@ -1,0 +1,50 @@
+# Build directories
+build/
+build_debug/
+dist/
+*.pyc
+__pycache__/
+
+*.egg-info
+
+# Editor and OS things
+imgui.ini
+.polyscope.ini
+.DS_Store
+.vscode
+*.swp
+tags
+*.blend1
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app

@@ -1,0 +1,83 @@
+name: Build
+
+# Run on the main branch and on tags (note conditional below)
+on:
+  push:
+    branches:    
+      - master
+    tags:        
+      - v*
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+
+    # Only run if the commit message contains '[ci build]' OR always run if it's a tag
+    if: "contains(toJSON(github.event.commits.*.message), '[ci build]') || contains(github.ref, 'refs/tags')"
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, windows-2019, macos-10.15]
+    env:
+      CIBW_BUILD_VERBOSITY: 3
+      CIBW_BUILD: "cp*-manylinux_x86_64 cp*-manylinux_i686 cp*-macosx_x86_64 cp*-win_amd64 cp*-win32"
+      #CIBW_BUILD: "cp36-manylinux_x86_64 cp36-manylinux_i686 cp36-macosx_x86_64 cp36-win_amd64 cp36-win32" # a few wheels for quick test runs
+      CIBW_BEFORE_BUILD_LINUX : "yum remove -y cmake && python -m pip install cmake"
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.7'
+
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install cibuildwheel==1.7.4 
+
+
+      - name: Install Visual C++ for Python 2.7
+        if: runner.os == 'Windows'
+        run: |
+          choco install vcpython27 -f -y
+      
+      - name: Package source distribution
+        if: runner.os == 'Linux'
+        run: |
+          python setup.py sdist -d wheelhouse --formats=gztar 
+
+      - name: Build wheels
+        run: |
+          python -m cibuildwheel --output-dir wheelhouse
+
+      # Upload binaries to github
+      - uses: actions/upload-artifact@v2
+        with:
+          path: |
+            ./wheelhouse/*.whl 
+            ./wheelhouse/*.tar.gz 
+
+  # Push the resulting binaries to pypi on a tag starting with 'v'
+  upload_pypi:
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    # upload to PyPI on every tag starting with 'v'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+    # alternatively, to publish when a GitHub Release is created, use the following rule:
+    # if: github.event_name == 'release' && github.event.action == 'published'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          # To test: repository_url: https://test.pypi.org/legacy/
+

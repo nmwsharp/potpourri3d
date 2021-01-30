@@ -1,0 +1,33 @@
+name: Test Linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: 'recursive'
+      
+    - uses: actions/setup-python@v2
+      name: Install Python
+      with:
+        python-version: '3.7'
+
+    - name: install python packages
+      run: python3 -m pip install numpy scipy
+
+    - name: configure
+      run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+    - name: build
+      run: cd build && make
+
+    - name: run test
+      run: python3 test/potpourri3d_test.py
