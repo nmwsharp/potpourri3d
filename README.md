@@ -9,8 +9,15 @@ The blend includes:
 - Sample a point cloud from a mesh
 - Use **heat methods** to compute distance, parallel transport, logarithmic maps, and more
 
+## Installation
 
-**Note**: Some bound functions invoke sparse linear solvers internally. The precompiled binaries use Eigen's solvers; using Suitesparse's solvers may significantly improve performance & robustness. To get them, locally compile the package using the command below on a machine with Suitesparse installed ([relevant docs](http://geometry-central.net/build/dependencies/#suitesparse)).
+Potpourri3d is on the pypi package index with precompiled binaries for most configuations. Get it like:
+
+`pip install potpourri3d`
+
+If none of the precompiled binaries match your system, `pip` will attempt to compile the library from scratch. This requires `cmake` and a workng C++ compiler toolchain.
+
+**Note**: Some bound functions invoke sparse linear solvers internally. The precompiled binaries use Eigen's solvers; using Suitesparse's solvers instead may significantly improve performance & robustness. To get them, locally compile the package on a machine with Suitesparse installed using the command below ([relevant docs](http://geometry-central.net/build/dependencies/#suitesparse)).
 
 ```
 python -m pip install potpourri3d --no-binary potpourri3d

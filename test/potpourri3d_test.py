@@ -38,49 +38,28 @@ def is_nonnegative(A, eps=1e-6):
     return np.all(A.data > -eps)
 
 class TestCore(unittest.TestCase):
+    
+    def test_write_read_mesh(self):
 
-    def test_read_mesh(self):
+        for ext in ['obj']:
 
-        L, M = rl.mesh_laplacian(V, F)
+            V = generate_verts()
+            F = generate_faces()
 
-        # Validate mass matrix    
-        self.assertTrue(is_nonnegative(M))
-        self.assertTrue(is_symmetric(M))
-        self.assertEqual(M.sum(), M.diagonal().sum())
-        
-        # Validate Laplacian 
-        self.assertTrue(is_symmetric(L))
-        off_L = scipy.sparse.diags(L.diagonal()) - L
-        self.assertTrue(is_nonnegative(off_L)) # positive edge weights
-        self.assertGreater(L.sum(), -1e-5)
+            fname = "test." + ext
 
+            # write
+            pp3d.write_mesh(V,F,fname)
 
-        # Trigger validation errors
-        # rl.mesh_laplacian("cat", F)  
-        # rl.mesh_laplacian(V, "cat")  
-        # rl.mesh_laplacian(V.flatten(), F)  
-        # rl.mesh_laplacian(V, F.flatten())  
-   
-    def test_point_cloud_laplacian(self):
+            Vnew, Fnew = pp3d.read_mesh(fname)
 
-        V = generate_verts()
+            
+            self.assertLess(np.amax(np.abs(V-Vnew)), 1e-6)
+            self.assertTrue((F==Fnew).all())
 
-        L, M = rl.point_cloud_laplacian(V)
-
-        # Validate mass matrix    
-        self.assertTrue(is_nonnegative(M))
-        self.assertTrue(is_symmetric(M))
-        self.assertEqual(M.sum(), M.diagonal().sum())
-        
-        # Validate Laplacian 
-        self.assertTrue(is_symmetric(L))
-        off_L = scipy.sparse.diags(L.diagonal()) - L
-        self.assertTrue(is_nonnegative(off_L)) # positive edge weights
-        self.assertGreater(L.sum(), -1e-5)
-
-        # Trigger validation errors
-        # rl.point_cloud_laplacian("cat")  
-        # rl.point_cloud_laplacian(V.flatten())  
+        # self.assertTrue(is_nonnegative(off_L)) # positive edge weights
+        # self.assertGreater(L.sum(), -1e-5)
+        # self.assertEqual(M.sum(), M.diagonal().sum())
 
 if __name__ == '__main__':
     unittest.main()

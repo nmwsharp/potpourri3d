@@ -1,4 +1,5 @@
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
+#include "geometrycentral/pointcloud/point_cloud.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
@@ -6,7 +7,6 @@
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
-#include "geometrycentral/pointcloud/point_cloud.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 
 #include <pybind11/eigen.h>
@@ -89,12 +89,53 @@ std::tuple<SparseMatrix<double>, SparseMatrix<double>> buildPointCloudLaplacian(
 std::tuple<DenseMatrix<double>, DenseMatrix<int64_t>> read_mesh(std::string filename) {
 
   // Call the mesh reader
-  std::unique_ptr<SurfaceMesh> mesh;
-  std::unique_ptr<VertexPositionGeometry> geom;
-  std::tie(mesh, geom) = readSurfaceMesh(filename);
+  SimplePolygonMesh pmesh(filename);
+
+  if (pmesh.nFaces() == 0) throw std::runtime_error("read mesh has no faces");
+
+  // Manually copy the vertex array
+  DenseMatrix<double> V(pmesh.nVertices(), 3);
+  for (size_t i = 0; i < pmesh.nVertices(); i++) {
+    for (size_t j = 0; j < 3; j++) {
+      V(i, j) = pmesh.vertexCoordinates[i][j];
+    }
+  }
+
+  // Manually copy the face array
+  size_t fDegree = pmesh.polygons[0].size();
+  DenseMatrix<int64_t> F(pmesh.nFaces(), fDegree);
+  for (size_t i = 0; i < pmesh.nFaces(); i++) {
+    if (pmesh.polygons[i].size() != fDegree) throw std::runtime_error("read mesh faces are not all the same degree");
+    for (size_t j = 0; j < fDegree; j++) {
+      F(i, j) = pmesh.polygons[i][j];
+    }
+  }
 
 
-  return std::make_tuple(EigenMap<double, 3, Eigen::RowMajor>(geom->inputVertexPositions), mesh->getFaceVertexMatrix<int64_t>());
+  return std::make_tuple(V, F);
+}
+
+void write_mesh(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, std::string filename) {
+
+  // Copy in to the mesh object
+  std::vector<Vector3> coords(verts.rows());
+  for (size_t i = 0; i < verts.rows(); i++) {
+    for (size_t j = 0; j < 3; j++) {
+      coords[i][j] = verts(i, j);
+    }
+  }
+  std::vector<std::vector<size_t>> polys(faces.rows());
+  for (size_t i = 0; i < faces.rows(); i++) {
+    polys[i].resize(faces.cols());
+    for (size_t j = 0; j < faces.cols(); j++) {
+      polys[i][j] = faces(i, j);
+    }
+  }
+
+  SimplePolygonMesh pmesh(polys, coords);
+
+  // Call the mesh writer
+  pmesh.writeMesh(filename);
 }
 
 
@@ -104,6 +145,7 @@ PYBIND11_MODULE(potpourri3d_bindings, m) {
   m.doc() = "potpourri3d low-level bindings";
   
   m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
+  m.def("write_mesh", &write_mesh, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("filename"));
  
   /*
   m.def("buildPointCloudLaplacian", &buildPointCloudLaplacian, "build the point cloud Laplacian", 
