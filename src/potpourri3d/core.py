@@ -2,15 +2,18 @@ import numpy as np
 
 import potpourri3d_bindings as pp3db
 
+# === IO
+
 def read_mesh(filename):
-
-    ## Call the bindings
     V, F = pp3db.read_mesh(filename)
-
-    ## Return the result
     return V, F
 
 def write_mesh(V, F, filename):
-
-    ## Call the bindings
     pp3db.write_mesh(V, F, filename)
+
+def read_point_cloud(filename):
+    V = pp3db.read_point_cloud(filename)
+    return V
+
+def write_point_cloud(V, filename):
+    pp3db.write_point_cloud(V, filename)

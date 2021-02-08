@@ -7,6 +7,10 @@ __pycache__/
 
 *.egg-info
 
+# Test things
+test/*.obj
+test/*.ply
+
 # Editor and OS things
 imgui.ini
 .polyscope.ini

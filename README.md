@@ -24,3 +24,15 @@ python -m pip install potpourri3d --no-binary potpourri3d
 ```
 
 ## Documentation
+
+### IO
+
+- `read_mesh(filename)` Reads a mesh from file. Returns numpy matrices `V, F`, a Nx3 real numpy array of vertices and a Mx3 integer numpy array of 0-based face indices (or Mx4 for a quad mesh, etc).
+  - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
+
+- `write_mesh(V, F, filename)` Write a mesh from file. Returns numpy matrices `V, F`, a Vx3 real array of vertices and a Fx3 integer array of 0-based face indices (or Fx4 for a quad mesh, etc).
+  - `V` a Nx3 real numpy array of vertices 
+  - `F` a Mx3 integer numpy array of 0-based face indices (or Mx4 for a quad mesh, etc).
+  - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
+
+

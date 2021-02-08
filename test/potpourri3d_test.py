@@ -56,6 +56,21 @@ class TestCore(unittest.TestCase):
             
             self.assertLess(np.amax(np.abs(V-Vnew)), 1e-6)
             self.assertTrue((F==Fnew).all())
+    
+    def test_write_read_point_cloud(self):
+
+        for ext in ['obj', 'ply']:
+
+            V = generate_verts()
+
+            fname = "test_cloud." + ext
+
+            # write
+            pp3d.write_point_cloud(V, fname)
+
+            Vnew = pp3d.read_point_cloud(fname)
+            
+            self.assertLess(np.amax(np.abs(V-Vnew)), 1e-6)
 
         # self.assertTrue(is_nonnegative(off_L)) # positive edge weights
         # self.assertGreater(L.sum(), -1e-5)
