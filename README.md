@@ -45,7 +45,7 @@ Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Proj
 import potpourri3d as pp3d
 
 # = Stateful solves (much faster if computing distance many times)
-solver = pp3d.MeshHeatMethodDistanceSolver(V,F,7)
+solver = pp3d.MeshHeatMethodDistanceSolver(V,F)
 dist = solver.compute_distance(7)
 dist = solver.compute_distance_multisource([1,2,3])  
 
@@ -65,3 +65,27 @@ dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
 - `compute_distance(V, F, v_ind)` Similar to above, but one-off instead of stateful. Returns an array of distances.
 - `compute_distance_multisource(V, F, v_ind_list)` Similar to above, but one-off instead of stateful. Returns an array of distances.
 
+### Mesh Vector Heat
+
+Use the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on meshes. Repeated solves are fast after initial setup.
+
+TODO add bindings for parallel transport and log map.
+
+```python
+import potpourri3d as pp3d
+
+# = Stateful solves
+solver = pp3d.MeshVectorHeat(V,F)
+
+# Extend hte value `0.` from vertex 12 and `1.` from vertex 17. Any vertex 
+# closer to 12. will take the value 0., and vice versa (plus some slight smoothing)
+ext = solver.extend_scalar([12, 17], [0.,1.])
+```
+
+- `MeshVectorHeat(self, V, F, t_coef=1.)` construct an instance of the solver class.
+  - `V` a Nx3 real numpy array of vertices 
+  - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, but need not be manifold).
+  - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
+- `MeshHeatMethodDistanceSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest vertex (plus some slight smoothing)
+  - `v_inds` a list of source vertices
+  - `values` a list of scalar values, one for each source vertex
