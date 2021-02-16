@@ -77,18 +77,17 @@ class TestCore(unittest.TestCase):
         # self.assertEqual(M.sum(), M.diagonal().sum())
     
 
-    def test_heat_distance(self):
+    def test_mesh_heat_distance(self):
 
         V = generate_verts()
         F = generate_faces()
          
         # Test stateful version
         
-        solver = pp3d.MeshHeatMethodDistanceSolver(V,F,7)
+        solver = pp3d.MeshHeatMethodDistanceSolver(V,F)
         dist = solver.compute_distance(7)
         self.assertEqual(dist.shape[0], V.shape[0])
 
-        dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
         dist = solver.compute_distance_multisource([1,2,3])
         self.assertEqual(dist.shape[0], V.shape[0])
         
@@ -100,6 +99,18 @@ class TestCore(unittest.TestCase):
 
         dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
         self.assertEqual(dist.shape[0], V.shape[0])
+    
+    def test_mesh_vector_heat(self):
+
+        V = generate_verts()
+        F = generate_faces()
+       
+        # TODO need manifold mesh to test
+        # solver = pp3d.MeshVectorHeatMethod(V,F,7)
+        # ext = solver.extend_scalar([1, 22], [0., 6.])
+        # self.assertEqual(ext.shape[0], V.shape[0])
+       
+
 
 if __name__ == '__main__':
     unittest.main()
