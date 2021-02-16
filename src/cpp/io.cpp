@@ -1,5 +1,7 @@
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
 #include "geometrycentral/pointcloud/point_cloud.h"
+#include "geometrycentral/pointcloud/point_cloud_io.h"
+#include "geometrycentral/pointcloud/point_position_geometry.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/surface/meshio.h"
@@ -8,8 +10,6 @@
 #include "geometrycentral/surface/surface_mesh_factories.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
-#include "geometrycentral/pointcloud/point_position_geometry.h"
-#include "geometrycentral/pointcloud/point_cloud_io.h"
 
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>

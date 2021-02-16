@@ -17,3 +17,5 @@ using namespace geometrycentral::pointcloud;
 
 // Forward declare module builders in various source files
 void bind_io(py::module& m);
+void bind_mesh(py::module& m);
+void bind_point_cloud(py::module& m);
