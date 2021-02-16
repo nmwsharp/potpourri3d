@@ -14,6 +14,8 @@ add_subdirectory(deps/geometry-central)
 pybind11_add_module(potpourri3d_bindings
   src/cpp/core.cpp
   src/cpp/io.cpp
+  src/cpp/mesh.cpp
+  src/cpp/point_cloud.cpp
 )
 
 include_directories(potpourri3d_bindings ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp)

@@ -75,6 +75,31 @@ class TestCore(unittest.TestCase):
         # self.assertTrue(is_nonnegative(off_L)) # positive edge weights
         # self.assertGreater(L.sum(), -1e-5)
         # self.assertEqual(M.sum(), M.diagonal().sum())
+    
+
+    def test_heat_distance(self):
+
+        V = generate_verts()
+        F = generate_faces()
+         
+        # Test stateful version
+        
+        solver = pp3d.MeshHeatMethodDistanceSolver(V,F,7)
+        dist = solver.compute_distance(7)
+        self.assertEqual(dist.shape[0], V.shape[0])
+
+        dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
+        dist = solver.compute_distance_multisource([1,2,3])
+        self.assertEqual(dist.shape[0], V.shape[0])
+        
+
+        # = Test one-off versions
+
+        dist = pp3d.compute_distance(V,F,7)
+        self.assertEqual(dist.shape[0], V.shape[0])
+
+        dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
+        self.assertEqual(dist.shape[0], V.shape[0])
 
 if __name__ == '__main__':
     unittest.main()

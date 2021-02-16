@@ -15,6 +15,9 @@ ps.init()
 # Read input
 V, F = pp3d.read_mesh("/Users/nick/mesh/spot.obj")
 
+dists = pp3d.compute_distance(V, F, 4)
+
 ps_mesh = ps.register_surface_mesh("mesh", V, F)
+ps_mesh.add_scalar_quantity("dist", dists)
 
 ps.show()
