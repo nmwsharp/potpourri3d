@@ -6,7 +6,6 @@ A Python library of various algorithms and utilities for 3D triangle meshes and 
 
 The blend includes:
 - Mesh and point cloud reading/writing to a few file formats
-- Sample a point cloud from a mesh
 - Use **heat methods** to compute distance, parallel transport, logarithmic maps, and more
 
 ## Installation
@@ -75,17 +74,48 @@ TODO add bindings for parallel transport and log map.
 import potpourri3d as pp3d
 
 # = Stateful solves
-solver = pp3d.MeshVectorHeat(V,F)
+solver = pp3d.MeshVectorHeatSolver(V,F)
 
-# Extend hte value `0.` from vertex 12 and `1.` from vertex 17. Any vertex 
-# closer to 12. will take the value 0., and vice versa (plus some slight smoothing)
+# Extend the value `0.` from vertex 12 and `1.` from vertex 17. Any vertex 
+# geodesically closer to 12. will take the value 0., and vice versa 
+# (plus some slight smoothing)
 ext = solver.extend_scalar([12, 17], [0.,1.])
 ```
 
-- `MeshVectorHeat(self, V, F, t_coef=1.)` construct an instance of the solver class.
+- `MeshVectorHeatSolver(self, V, F, t_coef=1.)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
-  - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, but need not be manifold).
+  - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, should be manifold).
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
-- `MeshHeatMethodDistanceSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest vertex (plus some slight smoothing)
+- `MeshVectorHeatSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest source vertex (plus some slight smoothing)
   - `v_inds` a list of source vertices
   - `values` a list of scalar values, one for each source vertex
+  
+
+### Point Cloud Distance & Vector Heat
+
+Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/) and [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on point clouds. Repeated solves are fast after initial setup.
+
+
+```python
+import potpourri3d as pp3d
+
+# = Stateful solves
+P = # Nx3 numpy array of points
+solver = pp3d.PointCloudHeadSolver(P)
+
+# Compute the geodesic distance to point 4
+dists = solver.compute_distance(4)
+
+# Extend the value `0.` from point 12 and `1.` from point 17. Any point 
+# geodesically closer to 12. will take the value 0., and vice versa 
+# (plus some slight smoothing)
+ext = solver.extend_scalar([12, 17], [0.,1.])
+```
+
+- `PointCloudHeadSolver(self, P, t_coef=1.)` construct an instance of the solver class.
+  - `P` a Nx3 real numpy array of points
+  - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
+- `PointCloudHeadSolver.extend_scalar(p_inds, values)` nearest-geodesic-neighbor interpolate values defined at points. Points will take the value from the closest source point (plus some slight smoothing)
+  - `v_inds` a list of source points
+  - `values` a list of scalar values, one for each source points
+
