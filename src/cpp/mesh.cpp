@@ -92,7 +92,7 @@ public:
 
   // Extend scalars from a collection of vertices
   Vector<double> extend_scalar(Vector<int64_t> sourceVerts, Vector<double> values) {
-    std::vector<std::tuple<Vertex,double>> sources;
+    std::vector<std::tuple<Vertex, double>> sources;
     for (size_t i = 0; i < sourceVerts.rows(); i++) {
       sources.emplace_back(mesh->vertex(sourceVerts(i)), values(i));
     }
@@ -100,10 +100,53 @@ public:
     return ext.toVector();
   }
 
-  /* TODO think about how to pass tangent frames around
-  DenseMatrix<double> transport_tangent_vectors(Vector<int64_t> sourceVerts, DenseMatrix<double> values);
-  DenseMatrix<double> compute_log_map(int64_t sourceVert);
-  */
+
+  // Returns an extrinsic representation of the tangent frame being used internally, as X/Y/N vectors.
+  std::tuple<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> get_tangent_frames() {
+
+    // Just in case we don't already have it
+    geom->requireVertexNormals();
+    geom->requireVertexTangentBasis();
+
+    // unpack
+    VertexData<Vector3> basisX(*mesh);
+    VertexData<Vector3> basisY(*mesh);
+    for (Vertex v : mesh->vertices()) {
+      basisX[v] = geom->vertexTangentBasis[v][0];
+      basisY[v] = geom->vertexTangentBasis[v][1];
+    }
+
+    return std::tuple<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>(
+        EigenMap<double, 3>(basisX), EigenMap<double, 3>(basisY), EigenMap<double, 3>(geom->vertexNormals));
+  }
+
+  // TODO think about how to pass tangent frames around
+  DenseMatrix<double> transport_tangent_vectors(Vector<int64_t> sourceVerts, DenseMatrix<double> values) {
+
+    // Pack it as a Vector2
+    std::vector<std::tuple<Vertex, Vector2>> sources;
+    for (size_t i = 0; i < sourceVerts.rows(); i++) {
+      sources.emplace_back(mesh->vertex(sourceVerts(i)), Vector2{values(i, 0), values(i, 1)});
+    }
+    VertexData<Vector2> ext = solver->transportTangentVectors(sources);
+
+    return EigenMap<double, 2>(ext);
+  }
+
+  DenseMatrix<double> transport_tangent_vector(int64_t sourceVert, DenseMatrix<double> values) {
+
+    // Pack it as a Vector2
+    std::vector<std::tuple<Vertex, Vector2>> sources;
+    sources.emplace_back(mesh->vertex(sourceVert), Vector2{values(0), values(1)});
+    VertexData<Vector2> ext = solver->transportTangentVectors(sources);
+
+    return EigenMap<double, 2>(ext);
+  }
+
+
+  DenseMatrix<double> compute_log_map(int64_t sourceVert) {
+    return EigenMap<double, 2>(solver->computeLogMap(mesh->vertex(sourceVert)));
+  }
 
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
@@ -119,10 +162,15 @@ void bind_mesh(py::module& m) {
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double, bool>())
         .def("compute_distance", &HeatMethodDistanceEigen::compute_distance, py::arg("source_vert"))
         .def("compute_distance_multisource", &HeatMethodDistanceEigen::compute_distance_multisource, py::arg("source_verts"));
-  
+ 
+
   py::class_<VectorHeatMethodEigen>(m, "MeshVectorHeatMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double>())
-        .def("extend_scalar", &VectorHeatMethodEigen::extend_scalar, py::arg("source_verts"), py::arg("values"));
+        .def("extend_scalar", &VectorHeatMethodEigen::extend_scalar, py::arg("source_verts"), py::arg("values"))
+        .def("get_tangent_frames", &VectorHeatMethodEigen::get_tangent_frames)
+        .def("transport_tangent_vector", &VectorHeatMethodEigen::transport_tangent_vector, py::arg("source_vert"), py::arg("vector"))
+        .def("transport_tangent_vectors", &VectorHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
+        .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"));
 
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));

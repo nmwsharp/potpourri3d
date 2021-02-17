@@ -107,9 +107,32 @@ class TestCore(unittest.TestCase):
         V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
        
         solver = pp3d.MeshVectorHeatSolver(V,F)
+
+        # Scalar extension
         ext = solver.extend_scalar([1, 22], [0., 6.])
         self.assertEqual(ext.shape[0], V.shape[0])
         self.assertGreaterEqual(np.amin(ext), 0.)
+        
+        # Get frames
+        basisX, basisY, basisN = solver.get_tangent_frames()
+        self.assertEqual(basisX.shape[0], V.shape[0])
+        self.assertEqual(basisY.shape[0], V.shape[0])
+        self.assertEqual(basisN.shape[0], V.shape[0])
+        # TODO could check orthogonal
+
+        # Vector heat (transport vector)
+        ext = solver.transport_tangent_vector(1, [6., 6.])
+        self.assertEqual(ext.shape[0], V.shape[0])
+        self.assertEqual(ext.shape[1], 2)
+        ext = solver.transport_tangent_vectors([1, 22], [[6., 6.], [3., 4.]])
+        self.assertEqual(ext.shape[0], V.shape[0])
+        self.assertEqual(ext.shape[1], 2)
+
+        # Vector heat (log map)
+        logmap = solver.compute_log_map(1)
+        self.assertEqual(logmap.shape[0], V.shape[0])
+        self.assertEqual(logmap.shape[1], 2)
+
     
     def test_point_cloud_distance(self):
 

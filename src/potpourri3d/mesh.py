@@ -35,3 +35,18 @@ class MeshVectorHeatSolver():
             raise ValueError("source vertex indices and values array should be same shape")
         return self.bound_solver.extend_scalar(v_inds, values)
     
+    def get_tangent_frames(self):
+        return self.bound_solver.get_tangent_frames()
+    
+    def transport_tangent_vector(self, v_ind, vector):
+        if len(vector) != 2:
+            raise ValueError("vector should be a 2D tangent vector")
+        return self.bound_solver.transport_tangent_vector(v_ind, vector)
+    
+    def transport_tangent_vectors(self, v_inds, vectors):
+        if len(v_inds) != len(vectors):
+            raise ValueError("source vertex indices and values array should be same length")
+        return self.bound_solver.transport_tangent_vectors(v_inds, vectors)
+    
+    def compute_log_map(self, v_ind):
+        return self.bound_solver.compute_log_map(v_ind)
