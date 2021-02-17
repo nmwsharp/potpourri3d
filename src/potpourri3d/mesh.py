@@ -24,14 +24,14 @@ def compute_distance_multisource(V, F, v_inds):
     return solver.compute_distance_multisource(v_inds)
 
 
-class MeshVectorHeatMethod():
+class MeshVectorHeatSolver():
 
     def __init__(self, V, F, t_coef=1.):
         validate_mesh(V, F, force_triangular=True)
         self.bound_solver = pp3db.MeshVectorHeatMethod(V, F, t_coef)
 
     def extend_scalar(self, v_inds, values):
-        if v_inds.shape != values.shape:
+        if len(v_inds) != len(values):
             raise ValueError("source vertex indices and values array should be same shape")
         return self.bound_solver.extend_scalar(v_inds, values)
     

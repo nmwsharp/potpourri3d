@@ -17,6 +17,7 @@ else:
 
 import potpourri3d as pp3d
 
+asset_path = os.path.abspath(os.path.dirname(__file__))
 
 def generate_verts(n_pts=999):
     np.random.seed(777)        
@@ -91,7 +92,7 @@ class TestCore(unittest.TestCase):
         dist = solver.compute_distance_multisource([1,2,3])
         self.assertEqual(dist.shape[0], V.shape[0])
         
-
+        
         # = Test one-off versions
 
         dist = pp3d.compute_distance(V,F,7)
@@ -99,17 +100,28 @@ class TestCore(unittest.TestCase):
 
         dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
         self.assertEqual(dist.shape[0], V.shape[0])
-    
+   
+
     def test_mesh_vector_heat(self):
 
-        V = generate_verts()
-        F = generate_faces()
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
        
-        # TODO need manifold mesh to test
-        # solver = pp3d.MeshVectorHeatMethod(V,F,7)
-        # ext = solver.extend_scalar([1, 22], [0., 6.])
-        # self.assertEqual(ext.shape[0], V.shape[0])
+        solver = pp3d.MeshVectorHeatSolver(V,F)
+        ext = solver.extend_scalar([1, 22], [0., 6.])
+        self.assertEqual(ext.shape[0], V.shape[0])
+        self.assertGreaterEqual(np.amin(ext), 0.)
+    
+    def test_point_cloud_distance(self):
+
+        P = generate_verts()
        
+        solver = pp3d.PointCloudHeatSolver(P)
+        
+        dist = solver.compute_distance(7)
+        self.assertEqual(dist.shape[0], P.shape[0])
+
+        dist = solver.compute_distance_multisource([1,2,3])
+        self.assertEqual(dist.shape[0], P.shape[0])
 
 
 if __name__ == '__main__':
