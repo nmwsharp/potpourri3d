@@ -68,8 +68,6 @@ dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
 
 Use the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on meshes. Repeated solves are fast after initial setup.
 
-TODO add bindings for parallel transport and log map.
-
 ```python
 import potpourri3d as pp3d
 
@@ -80,6 +78,20 @@ solver = pp3d.MeshVectorHeatSolver(V,F)
 # geodesically closer to 12. will take the value 0., and vice versa 
 # (plus some slight smoothing)
 ext = solver.extend_scalar([12, 17], [0.,1.])
+
+# Get the tangent frames which are used by the solver to define tangent data
+# at each vertex
+basisX, basisY, basisN = solver.get_tangent_frames()
+
+# Parallel transport a vector along the surface
+# (and map it to a vector in 3D)
+sourceV = 22
+ext = solver.transport_tangent_vector(sourceV, [6., 6.])
+ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
+
+# Compute the logarithmic map
+logmap = solver.compute_log_map(sourceV)
+ps_mesh.add_parameterization_quantity("logmap", logmap)
 ```
 
 - `MeshVectorHeatSolver(self, V, F, t_coef=1.)` construct an instance of the solver class.
@@ -89,7 +101,15 @@ ext = solver.extend_scalar([12, 17], [0.,1.])
 - `MeshVectorHeatSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest source vertex (plus some slight smoothing)
   - `v_inds` a list of source vertices
   - `values` a list of scalar values, one for each source vertex
-  
+- `MeshVectorHeatSolver.get_tangent_frames()` get the coordinate frames used to define tangent data at each vertex. Returned as a tuple of basis-X, basis-Y, and normal axes, each as an Nx3 array. May be necessary for change-of-basis into or out of tangent vector convention.
+- `MeshVectorHeatSolver.transport_tangent_vector(v_ind, vector)` parallel transports a single vectors across a surface
+  - `v_ind` index of the source vertex
+  - `vector` a 2D tangent vector to transport
+- `MeshVectorHeatSolver.transport_tangent_vectors(v_inds, vectors)` parallel transports a collection of vectors across a surface, such that each vertex takes the vector from its nearest-geodesic-neighbor.
+  - `v_inds` a list of source vertices
+  - `vectors` a list of 2D tangent vectors, one for each source vertex
+- `MeshVectorHeatSolver.compute_log_map(v_ind)` compute the logarithmic map centered at the given source vertex
+  - `v_ind` index of the source vertex
 
 ### Point Cloud Distance & Vector Heat
 
