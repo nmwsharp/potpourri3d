@@ -1,6 +1,6 @@
 # potpourri3d
 
-A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Managed by [Nicholas Sharp](https://nmwsharp.com), with new tools added as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
+A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Managed by [Nicholas Sharp](https://nmwsharp.com), with new tools added lazily as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
 
 `pip install potpourri3d`
 
@@ -116,6 +116,7 @@ ps_mesh.add_parameterization_quantity("logmap", logmap)
 
 Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/) and [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on point clouds. Repeated solves are fast after initial setup.
 
+![point cloud vector heat examples](https://github.com/nmwsharp/potpourri3d/blob/master/media/point_heat_solvers.jpg)
 
 ```python
 import potpourri3d as pp3d
