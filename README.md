@@ -72,6 +72,7 @@ Use the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) 
 import potpourri3d as pp3d
 
 # = Stateful solves
+V, F = # a Nx3 numpy array of points and Mx3 array of triangle face indices
 solver = pp3d.MeshVectorHeatSolver(V,F)
 
 # Extend the value `0.` from vertex 12 and `1.` from vertex 17. Any vertex 
@@ -102,7 +103,7 @@ ps_mesh.add_parameterization_quantity("logmap", logmap)
   - `v_inds` a list of source vertices
   - `values` a list of scalar values, one for each source vertex
 - `MeshVectorHeatSolver.get_tangent_frames()` get the coordinate frames used to define tangent data at each vertex. Returned as a tuple of basis-X, basis-Y, and normal axes, each as an Nx3 array. May be necessary for change-of-basis into or out of tangent vector convention.
-- `MeshVectorHeatSolver.transport_tangent_vector(v_ind, vector)` parallel transports a single vectors across a surface
+- `MeshVectorHeatSolver.transport_tangent_vector(v_ind, vector)` parallel transports a single vector across a surface
   - `v_ind` index of the source vertex
   - `vector` a 2D tangent vector to transport
 - `MeshVectorHeatSolver.transport_tangent_vectors(v_inds, vectors)` parallel transports a collection of vectors across a surface, such that each vertex takes the vector from its nearest-geodesic-neighbor.
@@ -120,8 +121,8 @@ Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Proj
 import potpourri3d as pp3d
 
 # = Stateful solves
-P = # Nx3 numpy array of points
-solver = pp3d.PointCloudHeadSolver(P)
+P = # a Nx3 numpy array of points
+solver = pp3d.PointCloudHeatSolver(P)
 
 # Compute the geodesic distance to point 4
 dists = solver.compute_distance(4)
@@ -130,12 +131,35 @@ dists = solver.compute_distance(4)
 # geodesically closer to 12. will take the value 0., and vice versa 
 # (plus some slight smoothing)
 ext = solver.extend_scalar([12, 17], [0.,1.])
+
+# Get the tangent frames which are used by the solver to define tangent data
+# at each point
+basisX, basisY, basisN = solver.get_tangent_frames()
+
+# Parallel transport a vector along the surface
+# (and map it to a vector in 3D)
+sourceP = 22
+ext = solver.transport_tangent_vector(sourceP, [6., 6.])
+ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
+
+# Compute the logarithmic map
+logmap = solver.compute_log_map(sourceP)
 ```
 
-- `PointCloudHeadSolver(self, P, t_coef=1.)` construct an instance of the solver class.
+- `PointCloudHeatSolver(self, P, t_coef=1.)` construct an instance of the solver class.
   - `P` a Nx3 real numpy array of points
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
-- `PointCloudHeadSolver.extend_scalar(p_inds, values)` nearest-geodesic-neighbor interpolate values defined at points. Points will take the value from the closest source point (plus some slight smoothing)
+- `PointCloudHeatSolver.extend_scalar(p_inds, values)` nearest-geodesic-neighbor interpolate values defined at points. Points will take the value from the closest source point (plus some slight smoothing)
   - `v_inds` a list of source points
   - `values` a list of scalar values, one for each source points
+- `PointCloudHeatSolver.get_tangent_frames()` get the coordinate frames used to define tangent data at each point. Returned as a tuple of basis-X, basis-Y, and normal axes, each as an Nx3 array. May be necessary for change-of-basis into or out of tangent vector convention.
+- `PointCloudHeatSolver.transport_tangent_vector(p_ind, vector)` parallel transports a single vector across a surface
+  - `p_ind` index of the source point
+  - `vector` a 2D tangent vector to transport
+- `PointCloudHeatSolver.transport_tangent_vectors(p_inds, vectors)` parallel transports a collection of vectors across a surface, such that each vertex takes the vector from its nearest-geodesic-neighbor.
+  - `p_inds` a list of source points
+  - `vectors` a list of 2D tangent vectors, one for each source point
+- `PointCloudHeatSolver.compute_log_map(p_ind)` compute the logarithmic map centered at the given source point
+  - `p_ind` index of the source point
+
 
