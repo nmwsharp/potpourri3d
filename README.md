@@ -24,7 +24,7 @@ python -m pip install potpourri3d --no-binary potpourri3d
 
 ## Documentation
 
-### IO
+### Input / Output
 
 Read/write meshes and point clouds from some common formats.
 
