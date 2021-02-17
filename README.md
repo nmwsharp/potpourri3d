@@ -1,6 +1,6 @@
 # potpourri3d
 
-A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
+A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Managed by [Nicholas Sharp](www.nmwsharp.com), with new tools added as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
 
 `pip install potpourri3d`
 
