@@ -19,3 +19,19 @@ class PointCloudHeatSolver():
         if len(p_inds) != len(values):
             raise ValueError("source point indices and values array should be same shape")
         return self.bound_solver.extend_scalar(p_inds, values)
+    
+    def get_tangent_frames(self):
+        return self.bound_solver.get_tangent_frames()
+    
+    def transport_tangent_vector(self, p_ind, vector):
+        if len(vector) != 2:
+            raise ValueError("vector should be a 2D tangent vector")
+        return self.bound_solver.transport_tangent_vector(p_ind, vector)
+    
+    def transport_tangent_vectors(self, p_inds, vectors):
+        if len(p_inds) != len(vectors):
+            raise ValueError("source point indices and values array should be same length")
+        return self.bound_solver.transport_tangent_vectors(p_inds, vectors)
+    
+    def compute_log_map(self, p_ind):
+        return self.bound_solver.compute_log_map(p_ind)
