@@ -92,7 +92,6 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 
 # Compute the logarithmic map
 logmap = solver.compute_log_map(sourceV)
-ps_mesh.add_parameterization_quantity("logmap", logmap)
 ```
 
 - `MeshVectorHeatSolver(self, V, F, t_coef=1.)` construct an instance of the solver class.
