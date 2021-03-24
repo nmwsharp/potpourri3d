@@ -36,6 +36,13 @@ Read/write meshes and point clouds from some common formats.
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices  (or Mx4 for a quad mesh, etc).
   - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
 
+
+### Mesh basic utilities
+
+- `face_areas(V, F)` computes a length-F real numpy array of face areas for a triangular mesh
+- `vertex_areas(V, F)` computes a length-V real numpy array of vertex areas for a triangular mesh (equal to 1/3 the sum of the incident face areas)
+- `cotan_laplacian(V, F, denom_eps=0.)` computes the cotan-Laplace matrix as a VxV real sparse csr scipy matrix. Optionally, set `denom_eps` to a small value like `1e-6` to get some additional stability in the presence of degenerate faces.
+
 ### Mesh Distance
 
 Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/) to compute geodesic distance on surfaces. Repeated solves are fast after initial setup. Uses [intrinsic triangulations](http://www.cs.cmu.edu/~kmcrane/Projects/NonmanifoldLaplace/NonmanifoldLaplace.pdf) internally for increased robustness.
