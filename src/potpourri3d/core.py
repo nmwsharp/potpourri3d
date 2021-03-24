@@ -3,7 +3,7 @@ import potpourri3d_bindings as pp3db
 
 # Sanity checkers applied throughout
 
-def validate_mesh(V, F, force_triangular=False):
+def validate_mesh(V, F, force_triangular=False, test_indices=False):
 
     if len(V.shape) != 2 or V.shape[1] != 3:
         raise ValueError("vertices should be a 2d Nx3 numpy array")
@@ -15,9 +15,10 @@ def validate_mesh(V, F, force_triangular=False):
     if force_triangular and F.shape[1] != 3:
         raise ValueError("faces must be triangular; dimensions should be Nx3")
 
-    max_elem = np.amin(F)
-    if max_elem >= n_vert:
-        raise ValueError("There is an out-of-bounds face index. Faces should be zero-based array of indices to vertices")
+    if test_indices:
+        max_elem = np.amin(F)
+        if max_elem >= n_vert:
+            raise ValueError("There is an out-of-bounds face index. Faces should be zero-based array of indices to vertices")
 
 def validate_points(V):
     

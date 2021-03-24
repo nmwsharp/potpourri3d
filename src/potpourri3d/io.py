@@ -10,7 +10,7 @@ def read_mesh(filename):
     return V, F
 
 def write_mesh(V, F, filename):
-    validate_mesh(V, F)
+    validate_mesh(V, F, test_indices=True)
     pp3db.write_mesh(V, F, filename)
 
 def read_point_cloud(filename):
