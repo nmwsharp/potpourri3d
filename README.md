@@ -24,6 +24,12 @@ python -m pip install potpourri3d --no-binary potpourri3d
 
 ## Documentation
 
+- [Input / Output](#input--output)
+- [Mesh basic utilities](#mesh-basic-utilities)
+- [Mesh Distance](#mesh-distance)
+- [Mesh Vector Heat](#mesh-vector-heat)
+- [Point Cloud Distance & Vector Heat](#point-cloud-distance--vector-heat)
+
 ### Input / Output
 
 Read/write meshes and point clouds from some common formats.
