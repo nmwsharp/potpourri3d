@@ -1,7 +1,7 @@
 import unittest
 import os
 import sys
-import os.path as path
+import os.path as path 
 import numpy as np
 import scipy
 
@@ -132,6 +132,28 @@ class TestCore(unittest.TestCase):
         logmap = solver.compute_log_map(1)
         self.assertEqual(logmap.shape[0], V.shape[0])
         self.assertEqual(logmap.shape[1], 2)
+    
+    def test_mesh_cotan_laplace(self):
+
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
+
+        L = pp3d.cotan_laplacian(V,F) 
+
+        self.assertEqual(L.shape[0],V.shape[0])
+        self.assertEqual(L.shape[1],V.shape[0])
+
+        self.assertLess(np.abs(np.sum(L)), 1e-6)
+    
+    def test_mesh_areas(self):
+
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
+
+        face_area = pp3d.face_areas(V,F)
+        self.assertEqual(face_area.shape[0],F.shape[0])
+        self.assertTrue(np.all(face_area >= 0))
+
+        vert_area = pp3d.vertex_areas(V,F) 
+        self.assertLess(np.abs(np.sum(face_area) - np.sum(vert_area)), 1e-6)
 
     def test_mesh_flip_geodesic(self):
 

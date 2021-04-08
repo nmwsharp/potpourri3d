@@ -24,7 +24,13 @@ python -m pip install potpourri3d --no-binary potpourri3d
 
 ## Documentation
 
-### IO
+- [Input / Output](#input--output)
+- [Mesh basic utilities](#mesh-basic-utilities)
+- [Mesh Distance](#mesh-distance)
+- [Mesh Vector Heat](#mesh-vector-heat)
+- [Point Cloud Distance & Vector Heat](#point-cloud-distance--vector-heat)
+
+### Input / Output
 
 Read/write meshes and point clouds from some common formats.
 
@@ -35,6 +41,13 @@ Read/write meshes and point clouds from some common formats.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices  (or Mx4 for a quad mesh, etc).
   - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
+
+
+### Mesh basic utilities
+
+- `face_areas(V, F)` computes a length-F real numpy array of face areas for a triangular mesh
+- `vertex_areas(V, F)` computes a length-V real numpy array of vertex areas for a triangular mesh (equal to 1/3 the sum of the incident face areas)
+- `cotan_laplacian(V, F, denom_eps=0.)` computes the cotan-Laplace matrix as a VxV real sparse csr scipy matrix. Optionally, set `denom_eps` to a small value like `1e-6` to get some additional stability in the presence of degenerate faces.
 
 ### Mesh Distance
 
@@ -92,7 +105,6 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 
 # Compute the logarithmic map
 logmap = solver.compute_log_map(sourceV)
-ps_mesh.add_parameterization_quantity("logmap", logmap)
 ```
 
 - `MeshVectorHeatSolver(self, V, F, t_coef=1.)` construct an instance of the solver class.

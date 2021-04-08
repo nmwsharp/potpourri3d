@@ -2,7 +2,9 @@ import os, sys
 
 import polyscope as ps
 import numpy as np
-# import scipy.sparse.linalg as sla
+import scipy 
+import scipy.sparse
+import scipy.sparse.linalg
 
 # Path to where the bindings live
 sys.path.append(os.path.join(os.path.dirname(__file__), "../build/"))
@@ -15,7 +17,6 @@ ps.init()
 # Read input
 
 ## = Mesh test
-# V, F = pp3d.read_mesh("/Users/nick/mesh/spot.obj")
 V, F = pp3d.read_mesh("bunny_small.ply")
 ps_mesh = ps.register_surface_mesh("mesh", V, F)
 
@@ -27,7 +28,7 @@ ps_mesh.add_scalar_quantity("dist", dists)
 solver = pp3d.MeshVectorHeatSolver(V, F)
 
 # Vector heat (extend scalar)
-ext = solver.extend_scalar([1, 22], [0., 6.])
+ext = solver.extend_scalar([1, 22], [0., 6.]) 
 ps_mesh.add_scalar_quantity("ext", ext)
 
 # Vector heat (tangent frames)
@@ -93,5 +94,20 @@ ps_cloud.add_vector_quantity("transport vec2", ext3D)
 logmap = solver.compute_log_map(1)
 ps_cloud.add_scalar_quantity("logmapX", logmap[:,0])
 ps_cloud.add_scalar_quantity("logmapY", logmap[:,1])
+
+# Areas
+vert_area = pp3d.vertex_areas(V,F)
+ps_mesh.add_scalar_quantity("vert area", vert_area)
+face_area = pp3d.face_areas(V,F)
+ps_mesh.add_scalar_quantity("face area", face_area, defined_on='faces')
+
+
+# Laplacian
+L = pp3d.cotan_laplacian(V,F,denom_eps=1e-6)
+M = scipy.sparse.diags(vert_area)
+k_eig = 6
+evals, evecs = scipy.sparse.linalg.eigsh(L, k_eig, M, sigma=1e-8)
+for i in range(k_eig):
+    ps_mesh.add_scalar_quantity("evec " + str(i), evecs[:,i])
 
 ps.show()
