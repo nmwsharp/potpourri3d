@@ -28,6 +28,7 @@ python -m pip install potpourri3d --no-binary potpourri3d
 - [Mesh basic utilities](#mesh-basic-utilities)
 - [Mesh Distance](#mesh-distance)
 - [Mesh Vector Heat](#mesh-vector-heat)
+- [Mesh Geodesic Paths](#mesh-geodesic-paths)
 - [Point Cloud Distance & Vector Heat](#point-cloud-distance--vector-heat)
 
 ### Input / Output
@@ -124,6 +125,26 @@ logmap = solver.compute_log_map(sourceV)
 - `MeshVectorHeatSolver.compute_log_map(v_ind)` compute the logarithmic map centered at the given source vertex
   - `v_ind` index of the source vertex
 
+### Mesh Geodesic Paths
+
+Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods are especially useful when you want the path itself, rather than the distance. Note that in general, these routines are **not** guaranteed to generate the globally-shortest geodesic. However, they can be orders of magnitude faster than methods which have such a guarantee.
+
+<img src="https://github.com/nmwsharp/potpourri3d/blob/master/media/elephant_geodesic.jpg" height="400">
+
+```python
+import potpourri3d as pp3d
+
+V, F = # your mesh
+path_solver = pp3d.EdgeFlipGeodesicSolver(V,F) # shares precomputation for repeated solves
+path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
+# path_pts is a Vx3 numpy array of points forming the path
+```
+
+- `EdgeFlipGeodesicSolver(self, V, F)` construct an instance of the solver class.
+  - `V` a Nx3 real numpy array of vertices 
+  - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (must form a manifold, oriented triangle mesh).
+- `EdgeFlipGeodesicSolver.find_geodesic_path(v_start, v_end)` compute a geodesic from `v_start` to `v_end`. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
+ 
 ### Point Cloud Distance & Vector Heat
 
 Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/) and [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on point clouds. Repeated solves are fast after initial setup.
