@@ -50,3 +50,13 @@ class MeshVectorHeatSolver():
     
     def compute_log_map(self, v_ind):
         return self.bound_solver.compute_log_map(v_ind)
+
+
+class EdgeFlipGeodesicSolver():
+
+    def __init__(self, V, F, t_coef=1.):
+        validate_mesh(V, F, force_triangular=True)
+        self.bound_solver = pp3db.EdgeFlipGeodesicsManager(V, F)
+
+    def find_geodesic_path(self, v_start, v_end):
+        return self.bound_solver.find_geodesic_path(v_start, v_end)

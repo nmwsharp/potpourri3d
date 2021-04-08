@@ -49,6 +49,14 @@ ps_mesh.add_vector_quantity("transport vec2", ext3D)
 logmap = solver.compute_log_map(1)
 ps_mesh.add_parameterization_quantity("logmap", logmap)
 
+# Flip geodesics
+path_solver = pp3d.EdgeFlipGeodesicSolver(V,F)
+for k in range(50):
+    for i in range(5):
+        path_pts = path_solver.find_geodesic_path(v_start=1, v_end=22+i)
+        ps.register_curve_network("flip path " + str(i), path_pts, edges='line')
+
+
 ## = Point cloud test
 P = V
 ps_cloud = ps.register_point_cloud("cloud", P)

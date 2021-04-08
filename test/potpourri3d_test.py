@@ -133,6 +133,23 @@ class TestCore(unittest.TestCase):
         self.assertEqual(logmap.shape[0], V.shape[0])
         self.assertEqual(logmap.shape[1], 2)
 
+    def test_mesh_flip_geodesic(self):
+
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
+         
+        # Test stateful version
+        path_solver = pp3d.EdgeFlipGeodesicSolver(V,F)
+
+        # Do a first path
+        path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
+        self.assertEqual(len(path_pts.shape), 2)
+        self.assertEqual(path_pts.shape[1], 3)
+
+        # Do some more
+        for i in range(5):
+            path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22+i)
+            self.assertEqual(len(path_pts.shape), 2)
+            self.assertEqual(path_pts.shape[1], 3)
     
     def test_point_cloud_distance(self):
 

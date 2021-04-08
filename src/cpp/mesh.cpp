@@ -1,7 +1,9 @@
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
+#include "geometrycentral/surface/flip_geodesics.h"
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
+#include "geometrycentral/surface/mesh_graph_algorithms.h"
 #include "geometrycentral/surface/simple_polygon_mesh.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
@@ -154,6 +156,68 @@ private:
   std::unique_ptr<VectorHeatMethodSolver> solver;
 };
 
+// A wrapper class for flip-based geodesics
+class EdgeFlipGeodesicsManager {
+
+public:
+  EdgeFlipGeodesicsManager(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+
+    // Construct the internal mesh and geometry
+    mesh.reset(new ManifoldSurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+
+    // Build the solver
+    flipNetwork.reset(new FlipEdgeNetwork(*mesh, *geom, {}));
+    flipNetwork->posGeom = geom.get();
+    flipNetwork->supportRewinding = true;
+  }
+
+  // Generate a point-to-point geodesic by straightening a Dijkstra path
+  DenseMatrix<double> find_geodesic_path(int64_t startVert, int64_t endVert) {
+
+    // Get an initial dijkstra path
+    std::vector<Halfedge> dijkstraPath = shortestEdgePath(*geom, mesh->vertex(startVert), mesh->vertex(endVert));
+
+    if (startVert == endVert) {
+      throw std::runtime_error("start and end vert are same");
+    }
+    if (dijkstraPath.empty()) {
+      throw std::runtime_error("vertices lie on disconnected components of the surface");
+    }
+
+    // Reinitialize the ede network to contain this path
+    flipNetwork->reinitializePath({dijkstraPath});
+
+    // Straighten the path to geodesic
+    flipNetwork->iterativeShorten();
+
+    // Extract the path and store it in the vector
+    std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
+    DenseMatrix<double> out(path3D.size(), 3);
+    for (size_t i = 0; i < path3D.size(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = path3D[i][j];
+      }
+    }
+
+    // Be kind, rewind
+    flipNetwork->rewind();
+
+    return out;
+  }
+
+private:
+  std::unique_ptr<ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+  std::unique_ptr<FlipEdgeNetwork> flipNetwork;
+};
+
+
 // Actual binding code
 // clang-format off
 void bind_mesh(py::module& m) {
@@ -172,6 +236,10 @@ void bind_mesh(py::module& m) {
         .def("transport_tangent_vectors", &VectorHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
         .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"));
 
+
+  py::class_<EdgeFlipGeodesicsManager>(m, "EdgeFlipGeodesicsManager")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }
