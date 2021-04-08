@@ -127,7 +127,7 @@ logmap = solver.compute_log_map(sourceV)
 
 ### Mesh Geodesic Paths
 
-Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods are especially useful when you want the path itself, rather than the distance. Note that in general, these routines are **not** guaranteed to generate the globally-shortest geodesic. However, they can be orders of magnitude faster than methods which have such a guarantee.
+Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods are especially useful when you want the path itself, rather than the distance. These routines use an iterative strategy which is quite fast, but note that it is not guaranteed to generate the globally-shortest geodesic (they sometimes find some other very short geodesic instead).
 
 <img src="https://github.com/nmwsharp/potpourri3d/blob/master/media/elephant_geodesic.jpg" height="400">
 
