@@ -68,7 +68,7 @@ dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
 ```
 
 
-- `MeshHeatMethodDistanceSolver(self, V, F, t_coef=1., use_robust=True)` construct an instance of the solver class.
+- `MeshHeatMethodDistanceSolver(V, F, t_coef=1., use_robust=True)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, but need not be manifold).
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
@@ -108,7 +108,7 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 logmap = solver.compute_log_map(sourceV)
 ```
 
-- `MeshVectorHeatSolver(self, V, F, t_coef=1.)` construct an instance of the solver class.
+- `MeshVectorHeatSolver(V, F, t_coef=1.)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, should be manifold).
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
@@ -140,7 +140,7 @@ path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
 # path_pts is a Vx3 numpy array of points forming the path
 ```
 
-- `EdgeFlipGeodesicSolver(self, V, F)` construct an instance of the solver class.
+- `EdgeFlipGeodesicSolver(V, F)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (must form a manifold, oriented triangle mesh).
 - `EdgeFlipGeodesicSolver.find_geodesic_path(v_start, v_end)` compute a geodesic from `v_start` to `v_end`. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
@@ -180,7 +180,7 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 logmap = solver.compute_log_map(sourceP)
 ```
 
-- `PointCloudHeatSolver(self, P, t_coef=1.)` construct an instance of the solver class.
+- `PointCloudHeatSolver(P, t_coef=1.)` construct an instance of the solver class.
   - `P` a Nx3 real numpy array of points
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
 - `PointCloudHeatSolver.extend_scalar(p_inds, values)` nearest-geodesic-neighbor interpolate values defined at points. Points will take the value from the closest source point (plus some slight smoothing)
