@@ -24,7 +24,7 @@ jobs:
       run: python3 -m pip install numpy scipy
 
     - name: configure
-      run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
+      run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPYTHON_EXECUTABLE=$(python3 -c "import sys; print(sys.executable)") ..
 
     - name: build
       run: cd build && make
