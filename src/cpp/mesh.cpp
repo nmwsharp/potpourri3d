@@ -14,6 +14,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "Eigen/Dense"
 
@@ -211,6 +212,93 @@ public:
     return out;
   }
 
+  // Generate a point-to-point geodesic by straightening a poly-geodesic path
+  DenseMatrix<double> find_geodesic_path_poly(std::vector<int64_t> verts) {
+
+    // Convert to a list of vertices
+    std::vector<Halfedge> halfedges;
+
+    for (size_t i = 0; i + 1 < verts.size(); i++) {
+      Vertex vA = mesh->vertex(verts[i]);
+      Vertex vB = mesh->vertex(verts[i + 1]);
+      std::vector<Halfedge> dijkstraPath = shortestEdgePath(*geom, vA, vB);
+
+      // validate
+      if (vA == vB) {
+        throw std::runtime_error("consecutive vertices are same");
+      }
+      if (dijkstraPath.empty()) {
+        throw std::runtime_error("vertices lie on disconnected components of the surface");
+      }
+
+      halfedges.insert(halfedges.end(), dijkstraPath.begin(), dijkstraPath.end());
+    }
+
+    // Reinitialize the ede network to contain this path
+    flipNetwork->reinitializePath({halfedges});
+
+    // Straighten the path to geodesic
+    flipNetwork->iterativeShorten();
+
+    // Extract the path and store it in the vector
+    std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
+    DenseMatrix<double> out(path3D.size(), 3);
+    for (size_t i = 0; i < path3D.size(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = path3D[i][j];
+      }
+    }
+
+    // Be kind, rewind
+    flipNetwork->rewind();
+
+    return out;
+  }
+
+
+  // Generate a point-to-point geodesic loop by straightening a poly-geodesic path
+  DenseMatrix<double> find_geodesic_loop(std::vector<int64_t> verts) {
+
+    // Convert to a list of vertices
+    std::vector<Halfedge> halfedges;
+
+    for (size_t i = 0; i < verts.size(); i++) {
+      Vertex vA = mesh->vertex(verts[i]);
+      Vertex vB = mesh->vertex(verts[(i + 1) % verts.size()]);
+      std::vector<Halfedge> dijkstraPath = shortestEdgePath(*geom, vA, vB);
+
+      // validate
+      if (vA == vB) {
+        throw std::runtime_error("consecutive vertices are same");
+      }
+      if (dijkstraPath.empty()) {
+        throw std::runtime_error("vertices lie on disconnected components of the surface");
+      }
+
+      halfedges.insert(halfedges.end(), dijkstraPath.begin(), dijkstraPath.end());
+    }
+
+    // Reinitialize the ede network to contain this path
+    flipNetwork->reinitializePath({halfedges});
+
+    // Straighten the path to geodesic
+    flipNetwork->iterativeShorten();
+
+    // Extract the path and store it in the vector
+    std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
+    DenseMatrix<double> out(path3D.size(), 3);
+    for (size_t i = 0; i < path3D.size(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = path3D[i][j];
+      }
+    }
+
+    // Be kind, rewind
+    flipNetwork->rewind();
+
+    return out;
+  }
+
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
@@ -239,7 +327,9 @@ void bind_mesh(py::module& m) {
 
   py::class_<EdgeFlipGeodesicsManager>(m, "EdgeFlipGeodesicsManager")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
-        .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"));
+        .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"))
+        .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
+        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }

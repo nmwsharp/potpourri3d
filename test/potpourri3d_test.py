@@ -53,7 +53,6 @@ class TestCore(unittest.TestCase):
             pp3d.write_mesh(V,F,fname)
 
             Vnew, Fnew = pp3d.read_mesh(fname)
-
             
             self.assertLess(np.amax(np.abs(V-Vnew)), 1e-6)
             self.assertTrue((F==Fnew).all())
@@ -172,6 +171,22 @@ class TestCore(unittest.TestCase):
             path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22+i)
             self.assertEqual(len(path_pts.shape), 2)
             self.assertEqual(path_pts.shape[1], 3)
+
+        # Initialize with a compound path
+        path_pts = path_solver.find_geodesic_path_poly([1173, 148, 870, 898])
+        self.assertEqual(len(path_pts.shape), 2)
+        self.assertEqual(path_pts.shape[1], 3)
+
+        # Do a loop
+        loop_pts = path_solver.find_geodesic_loop([1173, 148, 870, 898])
+        self.assertEqual(len(loop_pts.shape), 2)
+        self.assertEqual(loop_pts.shape[1], 3)
+
+        # Do another loop
+        # this one contracts to a point
+        loop_pts = path_solver.find_geodesic_loop([307, 757, 190]) 
+        self.assertEqual(len(loop_pts.shape), 2)
+        self.assertEqual(loop_pts.shape[1], 3)
     
     def test_point_cloud_distance(self):
 

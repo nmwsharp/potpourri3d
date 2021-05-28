@@ -56,6 +56,15 @@ for k in range(50):
     for i in range(5):
         path_pts = path_solver.find_geodesic_path(v_start=1, v_end=22+i)
         ps.register_curve_network("flip path " + str(i), path_pts, edges='line')
+        
+path_pts = path_solver.find_geodesic_path_poly([1173, 148, 870, 898])
+ps.register_curve_network("flip path poly", path_pts, edges='line')
+
+loop_pts = path_solver.find_geodesic_loop([1173, 148, 870, 898])
+ps.register_curve_network("flip loop", loop_pts, edges='loop')
+
+loop_pts = path_solver.find_geodesic_loop([307, 757, 190]) # this one contracts to a point
+ps.register_curve_network("flip loop", loop_pts, edges='loop')
 
 
 ## = Point cloud test
