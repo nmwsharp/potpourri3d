@@ -21,7 +21,7 @@ jobs:
         os: [ubuntu-18.04, windows-2019, macos-10.15]
     env:
       CIBW_BUILD_VERBOSITY: 3
-      CIBW_BUILD: "cp*-manylinux_x86_64 cp*-manylinux_i686 cp*-macosx_x86_64 cp*-win_amd64 cp*-win32"
+      CIBW_BUILD: "cp3*-manylinux_x86_64 cp3*-manylinux_i686 cp3*-macosx_x86_64 cp3*-win_amd64 cp3*-win32"
       #CIBW_BUILD: "cp36-manylinux_x86_64 cp36-manylinux_i686 cp36-macosx_x86_64 cp36-win_amd64 cp36-win32" # a few wheels for quick test runs
       CIBW_BEFORE_BUILD_LINUX : "yum remove -y cmake && python -m pip install cmake"
 
