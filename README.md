@@ -67,6 +67,7 @@ dist = pp3d.compute_distance(V,F,7)
 dist = pp3d.compute_distance_multisource(V,F,[1,3,4])
 ```
 
+The heat method works by solving a sequence of linear PDEs on the surface of your shape. On extremely coarse meshes, it may yield inaccurate results, if you observe this, consider using a finer mesh to improve accuracy. (TODO: do this internally with intrinsic Delaunay refinement.)
 
 - `MeshHeatMethodDistanceSolver(V, F, t_coef=1., use_robust=True)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
