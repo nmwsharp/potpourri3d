@@ -20,15 +20,30 @@ jobs:
     # More info here: https://github.community/t/accessing-commit-message-in-pull-request-event/17158/13
     if: "contains(toJSON(github.event.commits.*.message), '[ci build]') || contains(toJSON(github.event.pull_request.title), '[ci build]') || contains(github.ref, 'refs/tags')"
 
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, windows-2019, macos-10.15]
+        include:
+          - runs-on: ubuntu-latest
+            cibw-arch: manylinux_x86_64
+          - runs-on: ubuntu-latest
+            cibw-arch: manylinux_i686
+          - runs-on: macos-latest
+            cibw-arch: macosx_x86_64
+          - runs-on: macos-latest
+            cibw-arch: macosx_arm64
+          - runs-on: macos-latest
+            cibw-arch: macosx_universal2
+          - runs-on: windows-latest
+            cibw-arch: win_amd64
+          - runs-on: windows-latest
+            cibw-arch: win32
+            python-arch: x86
+
+    name: Build wheels ${{ matrix.cibw-arch }}
+    runs-on: ${{ matrix.runs-on }}
+
     env:
       CIBW_BUILD_VERBOSITY: 3
-      CIBW_BUILD: "cp3*-manylinux_x86_64 cp3*-manylinux_i686 cp3*-macosx_x86_64 cp3*-macosx_universal2 cp3*-macosx_arm64 cp3*-win_amd64 cp3*-win32" 
-      #CIBW_BUILD: "cp36-manylinux_x86_64 cp36-manylinux_i686 cp36-macosx_x86_64 cp36-win_amd64 cp36-win32" # a few wheels for quick test runs
-      CIBW_ARCHS_MACOS: "x86_64 universal2 arm64"
       CIBW_BEFORE_BUILD_LINUX : "yum remove -y cmake && python -m pip install cmake"
 
     steps:
@@ -45,6 +60,14 @@ jobs:
         run: |
           python -m pip install cibuildwheel==2.3.0
 
+      - name: Configure cibuildwheel
+        shell: bash
+        run: |
+          CMAKE_ARCH="${{ matrix.cibw-arch == 'win32' && '-A Win32' || '' }}"
+          CMAKE_OSX_ARCHITECTURES=${{ matrix.cibw-arch == 'macosx_x86_64' && 'x86_64' || matrix.cibw-arch == 'macosx_arm64' && 'arm64' || matrix.cibw-arch == 'macosx_universal2' && '"arm64;x86_64"' || '' }}
+          echo "CIBW_ARCHS_MACOS=x86_64 arm64 universal2" >> $GITHUB_ENV
+          echo "CIBW_BUILD=*-${{ matrix.cibw-arch }}" >> $GITHUB_ENV
+          echo "CIBW_ENVIRONMENT_MACOS=CMAKE_OSX_ARCHITECTURES=\"$CMAKE_OSX_ARCHITECTURES\"" >> $GITHUB_ENV
 
       - name: Package source distribution
         if: runner.os == 'Linux'
