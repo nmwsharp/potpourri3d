@@ -13,7 +13,6 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
 
     # Only run if the commit message contains '[ci build]' OR always run if it's a tag
     # This will not respect the tag if it appears in a pull request commit message. Those builds always show up as 'synchronize' events, and there is no easy way to get the corresponding commit messages. We instead pull the PR title to check for tags.
