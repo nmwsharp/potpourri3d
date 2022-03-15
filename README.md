@@ -117,6 +117,7 @@ logmap = solver.compute_log_map(sourceV)
   - `v_inds` a list of source vertices
   - `values` a list of scalar values, one for each source vertex
 - `MeshVectorHeatSolver.get_tangent_frames()` get the coordinate frames used to define tangent data at each vertex. Returned as a tuple of basis-X, basis-Y, and normal axes, each as an Nx3 array. May be necessary for change-of-basis into or out of tangent vector convention.
+- `MeshVectorHeatSolver.get_connection_laplacian()` get the _connection Laplacian_ used internally in the vector heat method, as a VxV sparse matrix.
 - `MeshVectorHeatSolver.transport_tangent_vector(v_ind, vector)` parallel transports a single vector across a surface
   - `v_ind` index of the source vertex
   - `vector` a 2D tangent vector to transport
