@@ -118,6 +118,12 @@ class TestCore(unittest.TestCase):
         self.assertEqual(basisY.shape[0], V.shape[0])
         self.assertEqual(basisN.shape[0], V.shape[0])
         # TODO could check orthogonal
+        
+        # Get connection Laplacian
+        L_conn = solver.get_connection_laplacian()
+        self.assertTrue(isinstance(L_conn, scipy.sparse.csc.csc_matrix))
+        max_diag_imag = np.max(np.abs(L_conn.diagonal().imag))
+        self.assertLess(max_diag_imag, 1e-4)
 
         # Vector heat (transport vector)
         ext = solver.transport_tangent_vector(1, [6., 6.])

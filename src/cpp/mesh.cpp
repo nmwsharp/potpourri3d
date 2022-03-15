@@ -123,6 +123,13 @@ public:
         EigenMap<double, 3>(basisX), EigenMap<double, 3>(basisY), EigenMap<double, 3>(geom->vertexNormals));
   }
 
+  SparseMatrix<std::complex<double>> get_connection_laplacian() {
+    geom->requireVertexConnectionLaplacian();
+    SparseMatrix<std::complex<double>> Lconn = geom->vertexConnectionLaplacian;
+    geom->unrequireVertexConnectionLaplacian();
+    return Lconn;
+  }
+
   // TODO think about how to pass tangent frames around
   DenseMatrix<double> transport_tangent_vectors(Vector<int64_t> sourceVerts, DenseMatrix<double> values) {
 
@@ -320,6 +327,7 @@ void bind_mesh(py::module& m) {
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double>())
         .def("extend_scalar", &VectorHeatMethodEigen::extend_scalar, py::arg("source_verts"), py::arg("values"))
         .def("get_tangent_frames", &VectorHeatMethodEigen::get_tangent_frames)
+        .def("get_connection_laplacian", &VectorHeatMethodEigen::get_connection_laplacian)
         .def("transport_tangent_vector", &VectorHeatMethodEigen::transport_tangent_vector, py::arg("source_vert"), py::arg("vector"))
         .def("transport_tangent_vectors", &VectorHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
         .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"));

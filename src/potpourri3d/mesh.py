@@ -41,6 +41,9 @@ class MeshVectorHeatSolver():
     def get_tangent_frames(self):
         return self.bound_solver.get_tangent_frames()
     
+    def get_connection_laplacian(self):
+        return self.bound_solver.get_connection_laplacian()
+    
     def transport_tangent_vector(self, v_ind, vector):
         if len(vector) != 2:
             raise ValueError("vector should be a 2D tangent vector")
