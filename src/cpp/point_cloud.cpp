@@ -12,7 +12,6 @@
 
 #include "Eigen/Dense"
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 namespace py = pybind11;
 
@@ -146,7 +145,7 @@ public:
 
     size_t idx = 0;
     for (Point v : cloud->points()) {
-      max_neigh = MAX(max_neigh, local_triangulation[v].size());
+      max_neigh = std::max(max_neigh, static_cast<int>(local_triangulation[v].size()));
       if (idx != v.getIndex()) {
         py::print("Error. Index of points not consistent. (Idx, v.getIndex) = ", idx, v.getIndex());
       }
