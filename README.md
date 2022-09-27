@@ -207,7 +207,7 @@ logmap = solver.compute_log_map(sourceP)
 
 #### Local Triangulation
 
-Construct a _local triangulation_ of a point cloud, a surface-like set of triangles amongst the points in the cloud. This is _not_ a nice connected/watertight mesh, instead it is a crazy soup, which is a union of sets of triangles computed independently around each point. These triangles _are_ suitable for running many geometric algorithms on, such as approximating surface properties of the point cloud, or evaluating physical and geometric energies, or building Laplace matrices.
+Construct a _local triangulation_ of a point cloud, a surface-like set of triangles amongst the points in the cloud. This is _not_ a nice connected/watertight mesh, instead it is a crazy soup, which is a union of sets of triangles computed independently around each point. These triangles _are_ suitable for running many geometric algorithms on, such as approximating surface properties of the point cloud, evaluating physical and geometric energies, or building Laplace matrices. See "A Laplacian for Nonmanifold Triangle Meshes", Sharp & Crane 2020, Sec 5.7 for details.
 
 - `PointCloudLocalTriangulation(P, with_degeneracy_heuristic=True)`
   - `PointCloudLocalTriangulation.get_local_triangulation()` returns a `[V,M,3]` integer numpy array, holding indices of vertices which form the triangulation. Each `[i,:,:]` holds the local triangles about vertex `i`. `M` is the max number of neighbors in any local triangulation. For vertices with fewer neighbors, the trailing rows hold `-1`.  
