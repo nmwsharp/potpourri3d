@@ -237,5 +237,43 @@ class TestCore(unittest.TestCase):
         self.assertEqual(logmap.shape[0], P.shape[0])
         self.assertEqual(logmap.shape[1], 2)
 
+    def test_point_cloud_local_triangulation(self):
+        # Test local triangulation for a "cartwheel" pointcloud
+
+        num = 31
+        t = np.linspace(0, 2*np.pi, num-1, endpoint=False)
+        points = np.concatenate([np.zeros([1, 3]), np.stack([np.cos(t), np.sin(t), 0*t], 1)], 0)
+
+        pcl_local_tri = pp3d.PointCloudLocalTriangulation(points)
+        idxs = pcl_local_tri.get_local_triangulation()
+
+        def next_id(i):
+            assert i != 0
+            if i == num-1:
+                return 1
+            return i+1
+
+        def prev_id(i):
+            assert i != 0
+            if i == 1:
+                return num-1
+            return i-1
+
+
+        # Explicitly check for cartwheel
+        # Use sets for order invariance
+
+        res0 = set(tuple(r) for r in idxs[0])
+        ref0 = set((0, j, next_id(j)) for j in range(1, num))
+        self.assertEqual(res0, ref0)
+
+        for i in range(1, num):
+            self.assertTrue(np.all(idxs[i, 2:] == -1))
+            
+            res = set(tuple(r) for r in idxs[i, :2])
+            ref = {(i, next_id(i), 0), (i, 0, prev_id(i))}
+            self.assertEqual(res, ref)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -35,3 +35,24 @@ class PointCloudHeatSolver():
     
     def compute_log_map(self, p_ind):
         return self.bound_solver.compute_log_map(p_ind)
+
+
+class PointCloudLocalTriangulation():
+
+    def __init__(self, P, with_degeneracy_heuristic=True):
+        validate_points(P)
+        self.bound_triangulation = pp3db.PointCloudLocalTriangulation(P, with_degeneracy_heuristic)
+
+    def get_local_triangulation(self):
+        """Return the local point cloud triangulation
+        
+        The out matrix has the following convention:
+            size: num_points, max_neighs, 3. max_neighs is the maximum number of neighbors
+            out[point_idx, neigh_idx, :] are the indices of the 3 neighbors
+            -1 is used as the fill value for unused elements if num_neighs < max_neighs for a point
+        """
+        out = self.bound_triangulation.get_local_triangulation()
+        assert out.shape[-1] % 3 == 0
+        max_neighs = out.shape[-1] // 3
+        out = np.reshape(out, [-1, max_neighs, 3])
+        return out
