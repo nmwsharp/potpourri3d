@@ -9,7 +9,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
-__version__ = '0.0.8'
+__version__ = '1.0.0'
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir='', exclude_arch=False):
@@ -92,7 +92,7 @@ def main():
         name='potpourri3d',
         version=__version__,
         author='Nicholas Sharp',
-        author_email='nsharp@cs.cmu.edu',
+        author_email='nmwsharp@gmail.com',
         url='https://github.com/nmwsharp/potpourri3d',
         description='An invigorating blend of 3D geometry tools in Python.',
         long_description=long_description,
