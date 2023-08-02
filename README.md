@@ -7,6 +7,8 @@ A Python library of various algorithms and utilities for 3D triangle meshes and 
 The blend includes:
 - Mesh and point cloud reading/writing to a few file formats
 - Use **heat methods** to compute distance, parallel transport, logarithmic maps, and more
+- Computing geodesic polylines along surface via edge flips
+- More!
 
 ## Installation
 
@@ -39,11 +41,17 @@ Read/write meshes and point clouds from some common formats.
 - `read_mesh(filename)` Reads a mesh from file. Returns numpy matrices `V, F`, a Nx3 real numpy array of vertices and a Mx3 integer numpy array of 0-based face indices (or Mx4 for a quad mesh, etc).
   - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
 
-- `write_mesh(V, F, filename)` Write a mesh from file. Returns numpy matrices `V, F`, a Vx3 real array of vertices and a Fx3 integer array of 0-based face indices (or Fx4 for a quad mesh, etc).
+- `write_mesh(V, F, filename)` Write a mesh to file.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices  (or Mx4 for a quad mesh, etc).
   - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
 
+- `read_point_cloud(filename)` Reads a point cloud from file. Returns numpy matrix `V`, a Nx3 real numpy array of vertices.  Really, this just reads a mesh file and ignores the face entries.
+  - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types)'s mesh reader. The file type is inferred automatically from the path extension.
+
+- `write_point_cloud(V, filename)` Write a mesh to file. Really, this just writes a mesh file with no face entries.
+  - `V` a Nx3 real numpy array of vertices 
+  - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types)'s mesh writer. The file type is inferred automatically from the path extension.
 
 ### Mesh basic utilities
 
