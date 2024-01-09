@@ -157,6 +157,7 @@ path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
 - `EdgeFlipGeodesicSolver.find_geodesic_path(v_start, v_end)` compute a geodesic from `v_start` to `v_end`. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
 - `EdgeFlipGeodesicSolver.find_geodesic_path_poly(v_list)` like `find_geodesic_path()`, but takes as input a list of vertices `[v_start, v_a, v_b, ..., v_end]`, which is shorted to find a path from `v_start` to `v_end`. Useful for finding geodesics which are not shortest paths. The input vertices do not need to be connected; the routine internally constructs a piecwise-Dijkstra path between them. However, that path must not cross itself.
 - `EdgeFlipGeodesicSolver.find_geodesic_loop(v_list)` like `find_geodesic_path_poly()`, but connects the first to last point to find a closed geodesic loop.
+- `EdgeFlipGeodesicSolver.trace_geodesic(startVert, directionX, directionY)` computes a geodesic tracing from a starting vertex along a tangent-space direction.
  
 ### Point Cloud Distance & Vector Heat
 

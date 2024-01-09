@@ -9,6 +9,8 @@
 #include "geometrycentral/surface/surface_mesh_factories.h"
 #include "geometrycentral/surface/vector_heat_method.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
+#include "geometrycentral/surface/surface_point.h"
+#include "geometrycentral/surface/trace_geodesic.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 
 #include <pybind11/eigen.h>
@@ -306,6 +308,29 @@ public:
     return out;
   }
 
+  // Generate a geodesic by tracing from a vertex along a tangent direction
+  DenseMatrix<double> trace_geodesic(int64_t startVert, double direction_x, double direction_y,
+                                     size_t max_iters = INVALID_IND) {
+    TraceGeodesicResult result =
+        traceGeodesic(*geom, SurfacePoint(mesh->vertex(startVert)), Vector2{direction_x, direction_y},
+                      TraceOptions{true, false, NULL, max_iters});
+
+    if (!result.hasPath) {
+      throw std::runtime_error("geodesic trace encountered an error");
+    }
+
+    // Extract the path and store it in the vector
+    DenseMatrix<double> out(result.pathPoints.size(), 3);
+    for (size_t i = 0; i < result.pathPoints.size(); i++) {
+      Vector3 point = result.pathPoints[i].interpolate(geom->vertexPositions);
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = point[j];
+      }
+    }
+
+    return out;
+  }
+
 private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
@@ -337,7 +362,8 @@ void bind_mesh(py::module& m) {
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"))
         .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
-        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"));
+        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"))
+        .def("trace_geodesic", &EdgeFlipGeodesicsManager::trace_geodesic, py::arg("start_vert"), py::arg("direction_x"), py::arg("direction_y"), py::arg("max_iters"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }
