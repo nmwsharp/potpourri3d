@@ -71,9 +71,10 @@ class EdgeFlipGeodesicSolver():
     
     def find_geodesic_loop(self, v_list):
         return self.bound_solver.find_geodesic_loop(v_list)
-    
-    def trace_geodesic(self, start_vert, direction_x, direction_y, max_iters = 1000):
-        return self.bound_solver.trace_geodesic(start_vert, direction_x, direction_y, max_iters)
+
+
+def trace_geodesic(self, V, F, start_vert, direction_x, direction_y, max_iters = 1000):
+    return pp3db.trace_geodesic(V, F, start_vert, direction_x, direction_y, max_iters)
 
 
 def cotan_laplacian(V, F, denom_eps=0.):
