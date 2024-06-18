@@ -15,7 +15,7 @@ jobs:
       with:
         submodules: 'recursive'
       
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v5
       name: Install Python
       with:
         python-version: '3.9'
