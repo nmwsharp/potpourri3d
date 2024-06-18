@@ -15,11 +15,10 @@ jobs:
       with:
         submodules: 'recursive'
 
-    # Use system python on mac; 3.9 seems to be available and this way there aren't multiple versions floating around 
-    #- uses: actions/setup-python@v2
-      #name: Install Python
-      #with:
-        #python-version: '3.7'
+    - uses: actions/setup-python@v2
+      name: Install Python
+      with:
+        python-version: '3.9'
 
     - name: install python packages
       run: python3 -m pip install numpy scipy
