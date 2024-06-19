@@ -154,9 +154,11 @@ path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
 - `EdgeFlipGeodesicSolver(V, F)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (must form a manifold, oriented triangle mesh).
-- `EdgeFlipGeodesicSolver.find_geodesic_path(v_start, v_end)` compute a geodesic from `v_start` to `v_end`. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
-- `EdgeFlipGeodesicSolver.find_geodesic_path_poly(v_list)` like `find_geodesic_path()`, but takes as input a list of vertices `[v_start, v_a, v_b, ..., v_end]`, which is shorted to find a path from `v_start` to `v_end`. Useful for finding geodesics which are not shortest paths. The input vertices do not need to be connected; the routine internally constructs a piecwise-Dijkstra path between them. However, that path must not cross itself.
-- `EdgeFlipGeodesicSolver.find_geodesic_loop(v_list)` like `find_geodesic_path_poly()`, but connects the first to last point to find a closed geodesic loop.
+- `EdgeFlipGeodesicSolver.find_geodesic_path(v_start, v_end, max_iterations=None, max_relative_length_decrease=None)` compute a geodesic from `v_start` to `v_end`. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
+- `EdgeFlipGeodesicSolver.find_geodesic_path_poly(v_list, max_iterations=None, max_relative_length_decrease=None)` like `find_geodesic_path()`, but takes as input a list of vertices `[v_start, v_a, v_b, ..., v_end]`, which is shorted to find a path from `v_start` to `v_end`. Useful for finding geodesics which are not shortest paths. The input vertices do not need to be connected; the routine internally constructs a piecwise-Dijkstra path between them. However, that path must not cross itself.
+- `EdgeFlipGeodesicSolver.find_geodesic_loop(v_list, max_iterations=None, max_relative_length_decrease=None)` like `find_geodesic_path_poly()`, but connects the first to last point to find a closed geodesic loop.
+
+In the functions above, the optional argument `max_iterations` is an integer, giving the the maximum number of shortening iterations to perform (default: no limit). The optional argument `max_relative_length_decrease` is a float limiting the maximum decrease in length for the path, e.g. `0.5` would mean the resulting path is at least `0.5 * L` length, where `L` is the initial length.
  
 ### Point Cloud Distance & Vector Heat
 

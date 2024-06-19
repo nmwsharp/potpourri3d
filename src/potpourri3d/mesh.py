@@ -63,14 +63,29 @@ class EdgeFlipGeodesicSolver():
         validate_mesh(V, F, force_triangular=True)
         self.bound_solver = pp3db.EdgeFlipGeodesicsManager(V, F)
 
-    def find_geodesic_path(self, v_start, v_end):
-        return self.bound_solver.find_geodesic_path(v_start, v_end)
+    def find_geodesic_path(self, v_start, v_end, max_iterations=None, max_relative_length_decrease=None):
+        if max_iterations is None:
+            max_iterations = 2**63-1
+        if max_relative_length_decrease is None:
+            max_relative_length_decrease = 0.
+
+        return self.bound_solver.find_geodesic_path(v_start, v_end, max_iterations, max_relative_length_decrease)
     
-    def find_geodesic_path_poly(self, v_list):
-        return self.bound_solver.find_geodesic_path_poly(v_list)
+    def find_geodesic_path_poly(self, v_list, max_iterations=None, max_relative_length_decrease=None):
+        if max_iterations is None:
+            max_iterations = 2**63-1
+        if max_relative_length_decrease is None:
+            max_relative_length_decrease = 0.
+
+        return self.bound_solver.find_geodesic_path_poly(v_list, max_iterations, max_relative_length_decrease)
     
-    def find_geodesic_loop(self, v_list):
-        return self.bound_solver.find_geodesic_loop(v_list)
+    def find_geodesic_loop(self, v_list, max_iterations=None, max_relative_length_decrease=None):
+        if max_iterations is None:
+            max_iterations = 2**63-1
+        if max_relative_length_decrease is None:
+            max_relative_length_decrease = 0.
+
+        return self.bound_solver.find_geodesic_loop(v_list, max_iterations, max_relative_length_decrease)
     
 
 def cotan_laplacian(V, F, denom_eps=0.):

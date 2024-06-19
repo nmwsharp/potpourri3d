@@ -171,6 +171,7 @@ class TestCore(unittest.TestCase):
         path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
         self.assertEqual(len(path_pts.shape), 2)
         self.assertEqual(path_pts.shape[1], 3)
+        path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22, max_iterations=100, max_relative_length_decrease=0.5)
 
         # Do some more
         for i in range(5):
@@ -182,6 +183,7 @@ class TestCore(unittest.TestCase):
         path_pts = path_solver.find_geodesic_path_poly([1173, 148, 870, 898])
         self.assertEqual(len(path_pts.shape), 2)
         self.assertEqual(path_pts.shape[1], 3)
+        path_pts = path_solver.find_geodesic_path_poly([1173, 148, 870, 898], max_iterations=100, max_relative_length_decrease=0.5)
 
         # Do a loop
         loop_pts = path_solver.find_geodesic_loop([1173, 148, 870, 898])
@@ -193,6 +195,7 @@ class TestCore(unittest.TestCase):
         loop_pts = path_solver.find_geodesic_loop([307, 757, 190]) 
         self.assertEqual(len(loop_pts.shape), 2)
         self.assertEqual(loop_pts.shape[1], 3)
+        loop_pts = path_solver.find_geodesic_loop([307, 757, 190], max_iterations=100, max_relative_length_decrease=0.5)
     
     def test_point_cloud_distance(self):
 

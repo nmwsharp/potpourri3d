@@ -186,7 +186,8 @@ public:
   }
 
   // Generate a point-to-point geodesic by straightening a Dijkstra path
-  DenseMatrix<double> find_geodesic_path(int64_t startVert, int64_t endVert) {
+  DenseMatrix<double> find_geodesic_path(int64_t startVert, int64_t endVert, size_t maxIterations = INVALID_IND,
+                                         double maxRelativeLengthDecrease = 0.) {
 
     // Get an initial dijkstra path
     std::vector<Halfedge> dijkstraPath = shortestEdgePath(*geom, mesh->vertex(startVert), mesh->vertex(endVert));
@@ -202,7 +203,7 @@ public:
     flipNetwork->reinitializePath({dijkstraPath});
 
     // Straighten the path to geodesic
-    flipNetwork->iterativeShorten();
+    flipNetwork->iterativeShorten(maxIterations, maxRelativeLengthDecrease);
 
     // Extract the path and store it in the vector
     std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
@@ -220,7 +221,8 @@ public:
   }
 
   // Generate a point-to-point geodesic by straightening a poly-geodesic path
-  DenseMatrix<double> find_geodesic_path_poly(std::vector<int64_t> verts) {
+  DenseMatrix<double> find_geodesic_path_poly(std::vector<int64_t> verts, size_t maxIterations = INVALID_IND,
+                                              double maxRelativeLengthDecrease = 0.) {
 
     // Convert to a list of vertices
     std::vector<Halfedge> halfedges;
@@ -245,7 +247,7 @@ public:
     flipNetwork->reinitializePath({halfedges});
 
     // Straighten the path to geodesic
-    flipNetwork->iterativeShorten();
+    flipNetwork->iterativeShorten(maxIterations, maxRelativeLengthDecrease);
 
     // Extract the path and store it in the vector
     std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
@@ -264,7 +266,8 @@ public:
 
 
   // Generate a point-to-point geodesic loop by straightening a poly-geodesic path
-  DenseMatrix<double> find_geodesic_loop(std::vector<int64_t> verts) {
+  DenseMatrix<double> find_geodesic_loop(std::vector<int64_t> verts, size_t maxIterations = INVALID_IND,
+                                         double maxRelativeLengthDecrease = 0.) {
 
     // Convert to a list of vertices
     std::vector<Halfedge> halfedges;
@@ -289,7 +292,7 @@ public:
     flipNetwork->reinitializePath({halfedges});
 
     // Straighten the path to geodesic
-    flipNetwork->iterativeShorten();
+    flipNetwork->iterativeShorten(maxIterations, maxRelativeLengthDecrease);
 
     // Extract the path and store it in the vector
     std::vector<Vector3> path3D = flipNetwork->getPathPolyline3D().front();
@@ -335,9 +338,9 @@ void bind_mesh(py::module& m) {
 
   py::class_<EdgeFlipGeodesicsManager>(m, "EdgeFlipGeodesicsManager")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
-        .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"))
-        .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"))
-        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"));
+        .def("find_geodesic_path", &EdgeFlipGeodesicsManager::find_geodesic_path, py::arg("source_vert"), py::arg("target_vert"), py::arg("maxIterations"), py::arg("maxRelativeLengthDecrease"))
+        .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"), py::arg("maxIterations"), py::arg("maxRelativeLengthDecrease"))
+        .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"), py::arg("maxIterations"), py::arg("maxRelativeLengthDecrease"));
 
   //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
 }

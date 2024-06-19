@@ -63,7 +63,7 @@ ps.register_curve_network("flip path poly", path_pts, edges='line')
 loop_pts = path_solver.find_geodesic_loop([1173, 148, 870, 898])
 ps.register_curve_network("flip loop", loop_pts, edges='loop')
 
-loop_pts = path_solver.find_geodesic_loop([307, 757, 190]) # this one contracts to a point
+loop_pts = path_solver.find_geodesic_loop([307, 757, 190], max_relative_length_decrease=.9) # this one otherwise contracts to a point
 ps.register_curve_network("flip loop", loop_pts, edges='loop')
 
 
