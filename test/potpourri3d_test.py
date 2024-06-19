@@ -121,7 +121,7 @@ class TestCore(unittest.TestCase):
         
         # Get connection Laplacian
         L_conn = solver.get_connection_laplacian()
-        self.assertTrue(isinstance(L_conn, scipy.sparse.csc.csc_matrix))
+        self.assertTrue(isinstance(L_conn, scipy.sparse.csc_matrix))
         max_diag_imag = np.max(np.abs(L_conn.diagonal().imag))
         self.assertLess(max_diag_imag, 1e-4)
 
