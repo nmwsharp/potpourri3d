@@ -136,9 +136,12 @@ logmap = solver.compute_log_map(sourceV)
 - `MeshVectorHeatSolver.compute_log_map(v_ind)` compute the logarithmic map centered at the given source vertex
   - `v_ind` index of the source vertex
 
-### Mesh Geodesic Paths
 
-Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods are especially useful when you want the path itself, rather than the distance. These routines use an iterative strategy which is quite fast, but note that it is not guaranteed to generate the globally-shortest geodesic (they sometimes find some other very short geodesic instead).
+### Mesh Geodesics Paths
+
+Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods take an initial path, loop, or start & end points along the surface, and straighten the path out to be geodesic.
+
+This approach is mainly useful when you want the path itself, rather than the distance. These routines use an iterative strategy which is quite fast, but note that it is not guaranteed to generate a globally-shortest geodesic (they sometimes find some other very short geodesic instead if straightening falls into different local minimum).
 
 <img src="https://github.com/nmwsharp/potpourri3d/blob/master/media/elephant_geodesic.jpg" height="400">
 
@@ -159,6 +162,28 @@ path_pts = path_solver.find_geodesic_path(v_start=14, v_end=22)
 - `EdgeFlipGeodesicSolver.find_geodesic_loop(v_list, max_iterations=None, max_relative_length_decrease=None)` like `find_geodesic_path_poly()`, but connects the first to last point to find a closed geodesic loop.
 
 In the functions above, the optional argument `max_iterations` is an integer, giving the the maximum number of shortening iterations to perform (default: no limit). The optional argument `max_relative_length_decrease` is a float limiting the maximum decrease in length for the path, e.g. `0.5` would mean the resulting path is at least `0.5 * L` length, where `L` is the initial length.
+
+### Mesh Geodesic Tracing
+
+Given an initial point and direction/length, these routines trace out a geodesic path along the surface of the mesh and return it as a polyline.
+
+```python
+import potpourri3d as pp3d
+
+V, F = # your mesh
+tracer = pp3d.GeodesicTracer(V,F) # shares precomputation for repeated traces
+
+trace_pts = tracer.trace_geodesic_from_vertex(22, np.array((0.3, 0.5, 0.4)))
+# trace_pts is a Vx3 numpy array of points forming the path
+```
+
+- `GeodesicTracer(V, F)` construct an instance of the tracer class.
+  - `V` a Nx3 real numpy array of vertices
+  - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (must form a manifold, oriented triangle mesh).
+- `GeodesicTracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations=None)` trace a geodesic from `start_vert`. `direction_xyz` is a length-3 vector giving the direction to walk trace in 3D xyz coordinates, it will be projected onto the tangent space of the vertex. The magnitude of `direction_xyz` determines the distance walked. Output is an `Nx3` numpy array of positions which define the path as a polyline along the surface.
+- `GeodesicTracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations=None)` similar to above, but from a point in a face. `bary_coords` is a length-3 vector of barycentric coordinates giving the location within the face to start from.
+
+Set `max_iterations` to terminate early after tracing the path through some number of faces/edges (default: no limit).
  
 ### Point Cloud Distance & Vector Heat
 

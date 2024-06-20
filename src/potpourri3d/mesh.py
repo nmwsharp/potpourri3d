@@ -86,6 +86,29 @@ class EdgeFlipGeodesicSolver():
             max_relative_length_decrease = 0.
 
         return self.bound_solver.find_geodesic_loop(v_list, max_iterations, max_relative_length_decrease)
+
+class GeodesicTracer():
+
+    def __init__(self, V, F, t_coef=1.):
+        validate_mesh(V, F, force_triangular=True)
+        self.bound_tracer = pp3db.GeodesicTracer(V, F)
+
+    def trace_geodesic_from_vertex(self, start_vert, direction_xyz, max_iterations=None):
+        if max_iterations is None:
+            max_iterations = 2**63-1
+
+        direction_xyz = np.array(direction_xyz)
+
+        return self.bound_tracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations)
+
+    def trace_geodesic_from_face(self, start_face, bary_coords, direction_xyz, max_iterations=None):
+        if max_iterations is None:
+            max_iterations = 2**63-1
+
+        bary_coords = np.array(bary_coords)
+        direction_xyz = np.array(direction_xyz)
+
+        return self.bound_tracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations)
     
 
 def cotan_laplacian(V, F, denom_eps=0.):

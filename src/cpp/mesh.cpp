@@ -7,6 +7,7 @@
 #include "geometrycentral/surface/simple_polygon_mesh.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
+#include "geometrycentral/surface/trace_geodesic.h"
 #include "geometrycentral/surface/vector_heat_method.h"
 #include "geometrycentral/surface/vertex_position_geometry.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
@@ -315,6 +316,90 @@ private:
   std::unique_ptr<FlipEdgeNetwork> flipNetwork;
 };
 
+class GeodesicTracer {
+
+public:
+  GeodesicTracer(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+
+    // Construct the internal mesh and geometry
+    mesh.reset(new ManifoldSurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+
+    geom->requireVertexTangentBasis();
+    geom->requireFaceTangentBasis();
+  }
+
+  // Generate a geodesic by tracing from a vertex along a tangent direction
+  DenseMatrix<double> trace_geodesic_worker(SurfacePoint start_point, Vector2 start_dir,
+                                            size_t max_iters = INVALID_IND) {
+
+    TraceOptions opts;
+    opts.includePath = true;
+    opts.errorOnProblem = false;
+    opts.barrierEdges = nullptr;
+    opts.maxIters = max_iters;
+
+    TraceGeodesicResult result = traceGeodesic(*geom, start_point, start_dir, opts);
+
+    if (!result.hasPath) {
+      throw std::runtime_error("geodesic trace encountered an error");
+    }
+
+    // Extract the path and store it in the vector
+    DenseMatrix<double> out(result.pathPoints.size(), 3);
+    for (size_t i = 0; i < result.pathPoints.size(); i++) {
+      Vector3 point = result.pathPoints[i].interpolate(geom->vertexPositions);
+      for (size_t j = 0; j < 3; j++) {
+        out(i, j) = point[j];
+      }
+    }
+
+    return out;
+  }
+
+  // Generate a geodesic by tracing from a vertex along a tangent direction
+  DenseMatrix<double> trace_geodesic_from_vertex(int64_t startVert, Eigen::Vector3d direction_xyz,
+                                                 size_t max_iters = INVALID_IND) {
+
+    // Project the input direction onto the tangent basis
+    Vertex vert = mesh->vertex(startVert);
+    Vector3 direction{direction_xyz(0), direction_xyz(1), direction_xyz(2)};
+    Vector3 bX = geom->vertexTangentBasis[vert][0];
+    Vector3 bY = geom->vertexTangentBasis[vert][1];
+
+    // magnitude matters! it determines the length
+    Vector2 tangent_dir{dot(direction, bX), dot(direction, bY)};
+
+    return trace_geodesic_worker(SurfacePoint(vert), tangent_dir, max_iters);
+  }
+
+  // Generate a geodesic by tracing from a face along a tangent direction
+  DenseMatrix<double> trace_geodesic_from_face(int64_t startFace, Eigen::Vector3d bary_coords,
+                                               Eigen::Vector3d direction_xyz, size_t max_iters = INVALID_IND) {
+
+    // Project the input direction onto the tangent basis
+    Face face = mesh->face(startFace);
+    Vector3 bary{bary_coords(0), bary_coords(1), bary_coords(2)};
+    Vector3 direction{direction_xyz(0), direction_xyz(1), direction_xyz(2)};
+    Vector3 bX = geom->faceTangentBasis[face][0];
+    Vector3 bY = geom->faceTangentBasis[face][1];
+
+    // magnitude matters! it determines the length
+    Vector2 tangent_dir{dot(direction, bX), dot(direction, bY)};
+
+    return trace_geodesic_worker(SurfacePoint(face, bary), tangent_dir, max_iters);
+  }
+
+private:
+  std::unique_ptr<ManifoldSurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+};
+
 
 // Actual binding code
 // clang-format off
@@ -342,5 +427,10 @@ void bind_mesh(py::module& m) {
         .def("find_geodesic_path_poly", &EdgeFlipGeodesicsManager::find_geodesic_path_poly, py::arg("vert_list"), py::arg("maxIterations"), py::arg("maxRelativeLengthDecrease"))
         .def("find_geodesic_loop", &EdgeFlipGeodesicsManager::find_geodesic_loop, py::arg("vert_list"), py::arg("maxIterations"), py::arg("maxRelativeLengthDecrease"));
 
-  //m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
+
+  py::class_<GeodesicTracer>(m, "GeodesicTracer")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("trace_geodesic_from_vertex", &GeodesicTracer::trace_geodesic_from_vertex, py::arg("start_vert"), py::arg("direction_xyz"), py::arg("max_iters"))
+        .def("trace_geodesic_from_face", &GeodesicTracer::trace_geodesic_from_face, py::arg("start_face"), py::arg("bary_coords"), py::arg("direction_xyz"), py::arg("max_iters"));
+
 }

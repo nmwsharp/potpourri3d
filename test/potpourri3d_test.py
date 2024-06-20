@@ -197,6 +197,32 @@ class TestCore(unittest.TestCase):
         self.assertEqual(loop_pts.shape[1], 3)
         loop_pts = path_solver.find_geodesic_loop([307, 757, 190], max_iterations=100, max_relative_length_decrease=0.5)
     
+
+    def test_geodesic_trace(self):
+
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
+
+        # Test stateful version
+        tracer = pp3d.GeodesicTracer(V,F)
+
+        # Trace from a vertex
+        trace_pts = tracer.trace_geodesic_from_vertex(22, np.array((0.3, 0.5, 0.4)))
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+
+        trace_pts = tracer.trace_geodesic_from_vertex(22, np.array((0.3, 0.5, 0.4)), max_iterations=10)
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+
+        # Trace from a face
+        trace_pts = tracer.trace_geodesic_from_face(31, np.array((0.1, 0.4, 0.5)), np.array((0.3, 0.5, 0.4)))
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+
+        trace_pts = tracer.trace_geodesic_from_face(31, np.array((0.1, 0.4, 0.5)), np.array((0.3, 0.5, 0.4)), max_iterations=10)
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+
     def test_point_cloud_distance(self):
 
         P = generate_verts()

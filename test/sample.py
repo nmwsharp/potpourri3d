@@ -67,6 +67,15 @@ loop_pts = path_solver.find_geodesic_loop([307, 757, 190], max_relative_length_d
 ps.register_curve_network("flip loop", loop_pts, edges='loop')
 
 
+# Trace geodesics
+tracer = pp3d.GeodesicTracer(V,F)
+
+trace_pts = tracer.trace_geodesic_from_vertex(22, np.array((0.3, 0.5, 0.4)))
+ps.register_curve_network("trace vertex geodesic", trace_pts, edges='line')
+
+trace_pts = tracer.trace_geodesic_from_face(31, np.array((0.1, 0.4, 0.5)), np.array((0.3, 0.5, 0.4)))
+ps.register_curve_network("trace face geodesic", trace_pts, edges='line')
+
 ## = Point cloud test
 P = V
 ps_cloud = ps.register_point_cloud("cloud", P)
