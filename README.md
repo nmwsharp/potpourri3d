@@ -31,6 +31,7 @@ python -m pip install potpourri3d --no-binary potpourri3d
 - [Mesh Distance](#mesh-distance)
 - [Mesh Vector Heat](#mesh-vector-heat)
 - [Mesh Geodesic Paths](#mesh-geodesic-paths)
+- [Mesh Geodesic Tracing](#mesh-geodesic-tracing)
 - [Point Cloud Distance & Vector Heat](#point-cloud-distance--vector-heat)
 - [Other Point Cloud Routines](#other-point-cloud-routines)
 
@@ -137,7 +138,7 @@ logmap = solver.compute_log_map(sourceV)
   - `v_ind` index of the source vertex
 
 
-### Mesh Geodesics Paths
+### Mesh Geodesic Paths
 
 Use [edge flips to compute geodesic paths](https://nmwsharp.com/research/flip-geodesics/) on surfaces. These methods take an initial path, loop, or start & end points along the surface, and straighten the path out to be geodesic.
 
