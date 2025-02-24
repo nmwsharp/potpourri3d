@@ -1,0 +1,53 @@
+name: Test Build
+
+# NOTE: build logic is duplicated here and in publish.yml
+
+# Run on the master branch commit push and PRs to master (note conditional below)
+on:
+  push:
+    branches:    
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_wheels:
+
+    # Only run if the commit message contains '[ci build]'
+    if: "contains(toJSON(github.event.commits.*.message), '[ci build]') || contains(toJSON(github.event.pull_request.title), '[ci build]')"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-13 is an intel runner, macos-14 is apple silicon
+        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+
+    name: Build wheels ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Package source distribution
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip install build
+          python -m build --sdist
+
+      - name: Run cibuildwheel
+        uses: pypa/cibuildwheel@v2.21
+        with:
+          config-file: ".github/workflows/cibuildwheel_config.toml"
+      
+      # Upload binaries to the github artifact store
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: |
+            ./wheelhouse/*.whl 
+            ./wheelhouse/*.tar.gz 
+          overwrite: true
