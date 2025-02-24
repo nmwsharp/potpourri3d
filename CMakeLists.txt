@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.1.0)
 project(potpourri3d_bindings)
 
 # Recurse in to pybind
+set(PYBIND11_NEWPYTHON ON)
 add_subdirectory(deps/pybind11)
 
 # set location of eigen for geometry-central
@@ -21,3 +22,5 @@ pybind11_add_module(potpourri3d_bindings
 include_directories(potpourri3d_bindings ${CMAKE_CURRENT_SOURCE_DIR}/src/cpp)
 
 target_link_libraries(potpourri3d_bindings PRIVATE geometry-central)
+
+install(TARGETS potpourri3d_bindings LIBRARY DESTINATION .)
