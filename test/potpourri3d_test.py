@@ -56,6 +56,17 @@ class TestCore(unittest.TestCase):
             
             self.assertLess(np.amax(np.abs(V-Vnew)), 1e-6)
             self.assertTrue((F==Fnew).all())
+
+
+            # smoke test various UV writers
+            UV_vert = V[:,:2]
+            pp3d.write_mesh(V,F,fname,UV_coords=UV_vert, UV_type='per-vertex')
+
+            UV_face = F[:,:2] * .3
+            pp3d.write_mesh(V,F,fname,UV_coords=UV_face, UV_type='per-face')
+            
+            UV_corner = np.zeros((F.shape[0]*F.shape[1],2))
+            pp3d.write_mesh(V,F,fname,UV_coords=UV_corner, UV_type='per-corner')
     
     def test_write_read_point_cloud(self):
 

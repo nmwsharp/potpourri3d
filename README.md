@@ -42,10 +42,12 @@ Read/write meshes and point clouds from some common formats.
 - `read_mesh(filename)` Reads a mesh from file. Returns numpy matrices `V, F`, a Nx3 real numpy array of vertices and a Mx3 integer numpy array of 0-based face indices (or Mx4 for a quad mesh, etc).
   - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
 
-- `write_mesh(V, F, filename)` Write a mesh to file.
+- `write_mesh(V, F, filename, UV_coords=None, UV_type=None)` Write a mesh to file, optionally with UV coords.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices  (or Mx4 for a quad mesh, etc).
   - `filename` the path to write the file to. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
+  - `UV_coords` (optional) a Ux2 numpy array of UV coords, interpreted based on UV_type. *Warning:* this function does not currently preserve shared UV indices when writing, each written coordinate is independent
+  - `UV_type` (optional) string, one of `'per-vertex'`, `'per-face'`, or `'per-corner'`. The size of `U` should be `N`, `M`, or `M*3/4`, respectively
 
 - `read_point_cloud(filename)` Reads a point cloud from file. Returns numpy matrix `V`, a Nx3 real numpy array of vertices.  Really, this just reads a mesh file and ignores the face entries.
   - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types)'s mesh reader. The file type is inferred automatically from the path extension.
