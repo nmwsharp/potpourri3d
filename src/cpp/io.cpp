@@ -57,9 +57,9 @@ std::tuple<DenseMatrix<double>, DenseMatrix<int64_t>> read_mesh(std::string file
   return std::make_tuple(V, F);
 }
 
-void write_mesh(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, std::string filename) {
-
-  // Copy in to the mesh object
+namespace { // anonymous helers
+SimplePolygonMesh buildMesh(const DenseMatrix<double>& verts, const DenseMatrix<int64_t>& faces,
+                            const DenseMatrix<double>& corner_UVs) {
   std::vector<Vector3> coords(verts.rows());
   for (size_t i = 0; i < verts.rows(); i++) {
     for (size_t j = 0; j < 3; j++) {
@@ -73,10 +73,78 @@ void write_mesh(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, std::stri
       polys[i][j] = faces(i, j);
     }
   }
+  std::vector<std::vector<Vector2>> corner_params;
+  if (corner_UVs.size() > 0) {
+    corner_params.resize(faces.rows());
+    for (size_t i = 0; i < faces.rows(); i++) {
+      corner_params[i].resize(faces.cols());
+      for (size_t j = 0; j < faces.cols(); j++) {
+        size_t ind = i * faces.cols() + j;
+        for (size_t k = 0; k < 2; k++) {
+          corner_params[i][j][k] = corner_UVs(ind, k);
+        }
+      }
+    }
+  }
 
-  SimplePolygonMesh pmesh(polys, coords);
+  return SimplePolygonMesh(polys, coords, corner_params);
+}
+SimplePolygonMesh buildMesh(const DenseMatrix<double>& verts, const DenseMatrix<int64_t>& faces) {
+  DenseMatrix<double> empty_UVs = DenseMatrix<double>::Zero(0, 2);
+  return buildMesh(verts, faces, empty_UVs);
+}
+} // namespace
 
-  // Call the mesh writer
+void write_mesh(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, std::string filename) {
+  SimplePolygonMesh pmesh = buildMesh(verts, faces);
+  pmesh.writeMesh(filename);
+}
+
+void write_mesh_pervertex_uv(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, DenseMatrix<double> UVs,
+                             std::string filename) {
+  size_t V = verts.rows();
+  size_t F = faces.rows();
+  size_t D = faces.cols();
+
+  // expand out to per-corner UVs
+  DenseMatrix<double> face_UVs = DenseMatrix<double>::Zero(F * D, 2);
+  for (size_t i = 0; i < F; i++) {
+    for (size_t j = 0; j < D; j++) {
+      size_t vInd = faces(i, j);
+      for (size_t k = 0; k < 2; k++) {
+        face_UVs(i * D + j, k) = UVs(vInd, k);
+      }
+    }
+  }
+
+  SimplePolygonMesh pmesh = buildMesh(verts, faces, face_UVs);
+  pmesh.writeMesh(filename);
+}
+
+void write_mesh_perface_uv(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, DenseMatrix<double> UVs,
+                           std::string filename) {
+
+  size_t V = verts.rows();
+  size_t F = faces.rows();
+  size_t D = faces.cols();
+
+  // expand out to per-corner UVs
+  DenseMatrix<double> face_UVs = DenseMatrix<double>::Zero(F * D, 2);
+  for (size_t i = 0; i < F; i++) {
+    for (size_t j = 0; j < D; j++) {
+      for (size_t k = 0; k < 2; k++) {
+        face_UVs(i * D + j, k) = UVs(i, k);
+      }
+    }
+  }
+
+  SimplePolygonMesh pmesh = buildMesh(verts, faces, face_UVs);
+  pmesh.writeMesh(filename);
+}
+
+void write_mesh_percorner_uv(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, DenseMatrix<double> UVs,
+                             std::string filename) {
+  SimplePolygonMesh pmesh = buildMesh(verts, faces, UVs);
   pmesh.writeMesh(filename);
 }
 
@@ -110,7 +178,11 @@ void write_point_cloud(DenseMatrix<double> points, std::string filename) {
 void bind_io(py::module& m) {
   
   m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
+
   m.def("write_mesh", &write_mesh, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("filename"));
+  m.def("write_mesh_pervertex_uv", &write_mesh_pervertex_uv, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("UVs"), py::arg("filename"));
+  m.def("write_mesh_perface_uv", &write_mesh_perface_uv, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("UVs"), py::arg("filename"));
+  m.def("write_mesh_percorner_uv", &write_mesh_percorner_uv, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("UVs"), py::arg("filename"));
   
   m.def("read_point_cloud", &read_point_cloud, "Read a point cloud from file.", py::arg("filename"));
   m.def("write_point_cloud", &write_point_cloud, "Write a point cloud to file.", py::arg("points"), py::arg("filename"));
