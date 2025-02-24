@@ -1,0 +1,13 @@
+[tool.cibuildwheel]
+skip = "cp36-*" # scikit-build-core requires >=3.7
+build-verbosity = 3
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum remove -y cmake",
+]
+
+# musllinux builds on an Alpinx Linux image, no need to mess with cmake there
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = ""
