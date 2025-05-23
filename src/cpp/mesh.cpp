@@ -4,6 +4,7 @@
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
 #include "geometrycentral/surface/mesh_graph_algorithms.h"
+#include "geometrycentral/surface/polygon_mesh_heat_solver.h"
 #include "geometrycentral/surface/simple_polygon_mesh.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
@@ -18,6 +19,8 @@
 #include <pybind11/stl.h>
 
 #include "Eigen/Dense"
+
+#include "heat_helpers.h"
 
 namespace py = pybind11;
 
@@ -163,6 +166,144 @@ private:
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
   std::unique_ptr<VectorHeatMethodSolver> solver;
+};
+
+// A wrapper class for the signed heat method solver, which exposes Eigen in/out
+class SignedHeatMethodEigen {
+
+  // TODO use intrinsic triangulations here
+
+public:
+  SignedHeatMethodEigen(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, double tCoef = 1.0) {
+
+    // Construct the internal mesh and geometry
+    mesh.reset(new SurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+
+    // Build the solver
+    solver.reset(new SignedHeatSolver(*geom, tCoef));
+  }
+
+  Vector<double> compute_distance(const std::vector<std::vector<std::pair<int64_t, std::vector<double>>>>& curves,
+                                  const std::vector<bool>& isSigned,
+                                  const std::vector<std::pair<int64_t, std::vector<double>>>& points,
+                                  bool preserveSourceNormals = false, const std::string& levelSetConstraint = "ZeroSet",
+                                  double softLevelSetWeight = -1.0) {
+
+    std::vector<Curve> sourceCurves = toSignedCurves(*mesh, curves, isSigned);
+    std::vector<SurfacePoint> sourcePoints = toSurfacePoints(*mesh, points);
+    SignedHeatOptions solveOptions = toSignedHeatOptions(preserveSourceNormals, levelSetConstraint, softLevelSetWeight);
+    VertexData<double> phi = solver->computeDistance(sourceCurves, sourcePoints, solveOptions);
+    return phi.toVector();
+  }
+
+  // // if you just want to specify vertex indices
+  // Vector<double> compute_distance(const std::vector<std::vector<int64_t>>& curves, const std::vector<bool>& isSigned,
+  //                                 const std::vector<int64_t>& points, bool preserveSourceNormals = false,
+  //                                 const std::string& levelSetConstraint = "ZeroSet", double softLevelSetWeight =
+  //                                 -1.0) {
+
+  //   std::vector<Curve> sourceCurves = toSignedCurves(*mesh, curves, isSigned);
+  //   std::vector<SurfacePoint> sourcePoints = toSurfacePoints(*mesh, points);
+  //   SignedHeatOptions solveOptions = toSignedHeatOptions(preserveSourceNormals, levelSetConstraint,
+  //   softLevelSetWeight); VertexData<double> phi = solver->computeDistance(sourceCurves, sourcePoints, solveOptions);
+  //   return phi.toVector();
+  // }
+
+private:
+  std::unique_ptr<SurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+  std::unique_ptr<SignedHeatSolver> solver;
+};
+
+// A wrapper class for the polygon mesh heat method solver, which exposes Eigen in/out
+class PolygonMeshHeatMethodEigen {
+
+public:
+  PolygonMeshHeatMethodEigen(const DenseMatrix<double>& verts, const std::vector<std::vector<size_t>>& faces,
+                             double tCoef = 1.0) {
+
+    // Construct the internal mesh and geometry
+    mesh.reset(new SurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+
+    // Build the solver
+    solver.reset(new PolygonMeshHeatSolver(*geom, tCoef));
+  }
+
+  Vector<double> compute_distance(Vector<int64_t> sourceVerts) {
+    std::vector<Vertex> sources;
+    for (size_t i = 0; i < sourceVerts.rows(); i++) {
+      sources.push_back(mesh->vertex(sourceVerts(i)));
+    }
+    VertexData<double> dist = solver->computeDistance(sources);
+    return dist.toVector();
+  }
+
+  Vector<double> extend_scalar(Vector<int64_t> sourceVerts, Vector<double> values) {
+    std::vector<std::tuple<Vertex, double>> sources;
+    for (size_t i = 0; i < sourceVerts.rows(); i++) {
+      sources.emplace_back(mesh->vertex(sourceVerts(i)), values(i));
+    }
+    VertexData<double> ext = solver->extendScalars(sources);
+    return ext.toVector();
+  }
+
+  // Returns an extrinsic representation of the tangent frame being used internally, as X/Y/N vectors.
+  // This is a direct copy of what's already in the VectorHeatMethodEigen class. It's not ideal to repeat code, but this
+  // also seems like the simplest solution without making breaking changes.
+  std::tuple<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> get_tangent_frames() {
+
+    // Just in case we don't already have it
+    geom->requireVertexNormals();
+    geom->requireVertexTangentBasis();
+
+    // unpack
+    VertexData<Vector3> basisX(*mesh);
+    VertexData<Vector3> basisY(*mesh);
+    for (Vertex v : mesh->vertices()) {
+      basisX[v] = geom->vertexTangentBasis[v][0];
+      basisY[v] = geom->vertexTangentBasis[v][1];
+    }
+
+    return std::tuple<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>(
+        EigenMap<double, 3>(basisX), EigenMap<double, 3>(basisY), EigenMap<double, 3>(geom->vertexNormals));
+  }
+
+  DenseMatrix<double> transport_tangent_vectors(Vector<int64_t> sourceVerts, DenseMatrix<double> values) {
+    std::vector<std::tuple<Vertex, Vector2>> sources;
+    for (size_t i = 0; i < sourceVerts.rows(); i++) {
+      sources.emplace_back(mesh->vertex(sourceVerts(i)), Vector2{values(i, 0), values(i, 1)});
+    }
+    VertexData<Vector2> ext = solver->transportTangentVectors(sources);
+
+    return EigenMap<double, 2>(ext);
+  }
+
+  Vector<double> compute_signed_distance(const std::vector<std::vector<int64_t>>& curves,
+                                         const std::string& levelSetConstraint = "ZeroSet") {
+
+    std::vector<std::vector<Vertex>> sourceCurves = toSignedVertices(*mesh, curves);
+    SignedHeatOptions solveOptions = toSignedHeatOptions(false, levelSetConstraint, -1.0);
+    VertexData<double> dist = solver->computeSignedDistance(sourceCurves, solveOptions.levelSetConstraint);
+    return dist.toVector();
+  }
+
+
+private:
+  std::unique_ptr<SurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+  std::unique_ptr<PolygonMeshHeatSolver> solver;
 };
 
 // A wrapper class for flip-based geodesics
@@ -420,6 +561,25 @@ void bind_mesh(py::module& m) {
         .def("transport_tangent_vectors", &VectorHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
         .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"));
 
+  py::class_<SignedHeatMethodEigen>(m, "MeshSignedHeatMethod")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double>())
+        .def("compute_distance", &SignedHeatMethodEigen::compute_distance,
+             py::arg("curves") = std::vector<std::vector<std::pair<int64_t, std::vector<double>>>>(),
+             py::arg("is_signed") = std::vector<bool>(),
+             py::arg("points") = std::vector<std::pair<int64_t, std::vector<double>>>(),
+             py::arg("preserve_source_normals") = false,
+             py::arg("level_set_constraint") = "ZeroSet",
+             py::arg("soft_level_set_weight") = -1.0);
+
+  py::class_<PolygonMeshHeatMethodEigen>(m, "PolygonMeshHeatSolver")
+        .def(py::init<DenseMatrix<double>, std::vector<std::vector<size_t>>, double>())
+        .def("compute_distance", &PolygonMeshHeatMethodEigen::compute_distance, py::arg("source_verts"))
+        .def("extend_scalar", &PolygonMeshHeatMethodEigen::extend_scalar, py::arg("source_verts"), py::arg("values"))
+        .def("get_tangent_frames", &PolygonMeshHeatMethodEigen::get_tangent_frames)
+        .def("transport_tangent_vectors", &PolygonMeshHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
+        .def("compute_signed_distance", &PolygonMeshHeatMethodEigen::compute_signed_distance, 
+             py::arg("curves") = std::vector<std::vector<int64_t>>(),
+             py::arg("level_set_constraint") = "ZeroSet");
 
   py::class_<EdgeFlipGeodesicsManager>(m, "EdgeFlipGeodesicsManager")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())

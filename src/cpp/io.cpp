@@ -14,6 +14,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "Eigen/Dense"
 
@@ -55,6 +56,33 @@ std::tuple<DenseMatrix<double>, DenseMatrix<int64_t>> read_mesh(std::string file
 
 
   return std::make_tuple(V, F);
+}
+
+std::tuple<DenseMatrix<double>, std::vector<std::vector<int64_t>>> read_polygon_mesh(std::string filename) {
+
+  // Call the mesh reader
+  SimplePolygonMesh pmesh(filename);
+
+  if (pmesh.nFaces() == 0) throw std::runtime_error("read mesh has no faces");
+
+  // Manually copy the vertex array
+  DenseMatrix<double> V(pmesh.nVertices(), 3);
+  for (size_t i = 0; i < pmesh.nVertices(); i++) {
+    for (size_t j = 0; j < 3; j++) {
+      V(i, j) = pmesh.vertexCoordinates[i][j];
+    }
+  }
+
+  std::vector<std::vector<int64_t>> polygons(pmesh.nFaces());
+  for (size_t i = 0; i < pmesh.nFaces(); i++) {
+    size_t fDegree = pmesh.polygons[i].size();
+    polygons[i].resize(fDegree);
+    for (size_t j = 0; j < fDegree; j++) {
+      polygons[i][j] = pmesh.polygons[i][j];
+    }
+  }
+
+  return std::make_tuple(V, polygons);
 }
 
 namespace { // anonymous helers
@@ -178,6 +206,7 @@ void write_point_cloud(DenseMatrix<double> points, std::string filename) {
 void bind_io(py::module& m) {
   
   m.def("read_mesh", &read_mesh, "Read a mesh from file.", py::arg("filename"));
+  m.def("read_polygon_mesh", &read_polygon_mesh, "Read a polygon mesh from file.", py::arg("filename"));
 
   m.def("write_mesh", &write_mesh, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("filename"));
   m.def("write_mesh_pervertex_uv", &write_mesh_pervertex_uv, "Write a mesh to file.", py::arg("verts"), py::arg("faces"), py::arg("UVs"), py::arg("filename"));

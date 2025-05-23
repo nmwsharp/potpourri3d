@@ -9,6 +9,11 @@ def read_mesh(filename):
     F = np.ascontiguousarray(F)
     return V, F
 
+def read_polygon_mesh(filename):
+    V, F = pp3db.read_polygon_mesh(filename)
+    V = np.ascontiguousarray(V)
+    return V, F
+
 def write_mesh(V, F, filename, UV_coords=None, UV_type=None):
     # TODO generalize this to take indexed UVs
     # (the underlying geometry-central writer needs to support it first)

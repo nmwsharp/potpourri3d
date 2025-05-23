@@ -15,6 +15,7 @@ add_subdirectory(deps/geometry-central)
 pybind11_add_module(potpourri3d_bindings
   src/cpp/core.cpp
   src/cpp/io.cpp
+  src/cpp/heat_helpers.cpp
   src/cpp/mesh.cpp
   src/cpp/point_cloud.cpp
 )
