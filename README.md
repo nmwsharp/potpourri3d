@@ -1,12 +1,12 @@
 # potpourri3d
 
-A Python library of various algorithms and utilities for 3D triangle meshes and point clouds. Managed by [Nicholas Sharp](https://nmwsharp.com), with new tools added lazily as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
+A Python library of various algorithms and utilities for 3D polygon meshes and point clouds. Managed by [Nicholas Sharp](https://nmwsharp.com), with new tools added lazily as needed. Currently, mainly bindings to C++ tools from [geometry-central](http://geometry-central.net/).
 
 `pip install potpourri3d`
 
 The blend includes:
 - Mesh and point cloud reading/writing to a few file formats
-- Use **heat methods** to compute distance, parallel transport, logarithmic maps, and more
+- Use **heat methods** to compute unsigned and signed distances, parallel transport, logarithmic maps, and more
 - Computing geodesic polylines along surface via edge flips
 - More!
 
@@ -29,9 +29,11 @@ python -m pip install potpourri3d --no-binary potpourri3d
 - [Input / Output](#input--output)
 - [Mesh basic utilities](#mesh-basic-utilities)
 - [Mesh Distance](#mesh-distance)
+- [Mesh Signed Distance](#mesh-signed-distance)
 - [Mesh Vector Heat](#mesh-vector-heat)
 - [Mesh Geodesic Paths](#mesh-geodesic-paths)
 - [Mesh Geodesic Tracing](#mesh-geodesic-tracing)
+- [Polygon Mesh Distance & Transport](#polygon-mesh-distance--transport)
 - [Point Cloud Distance & Vector Heat](#point-cloud-distance--vector-heat)
 - [Other Point Cloud Routines](#other-point-cloud-routines)
 
@@ -40,6 +42,7 @@ python -m pip install potpourri3d --no-binary potpourri3d
 Read/write meshes and point clouds from some common formats.
 
 - `read_mesh(filename)` Reads a mesh from file. Returns numpy matrices `V, F`, a Nx3 real numpy array of vertices and a Mx3 integer numpy array of 0-based face indices (or Mx4 for a quad mesh, etc).
+- `read_polygon_mesh(filename)` Reads a mesh from file. Returns numpy matrices `V, F`, where `V` is a Nx3 real numpy array of vertices, and a `polygons` is a nested list of integers; each sub-list represents a polygon face with 0-based face indices.
   - `filename` the path to read the file from. Currently supports the same file types as [geometry-central](http://geometry-central.net/surface/utilities/io/#supported-file-types). The file type is inferred automatically from the path extension.
 
 - `write_mesh(V, F, filename, UV_coords=None, UV_type=None)` Write a mesh to file, optionally with UV coords.
@@ -90,6 +93,49 @@ The heat method works by solving a sequence of linear PDEs on the surface of you
 - `MeshHeatMethodDistanceSolver.compute_distance_multisource(v_ind_list)` compute distance from the nearest of a collection of vertices, given by a list of zero-based indices. Returns an array of distances.
 - `compute_distance(V, F, v_ind)` Similar to above, but one-off instead of stateful. Returns an array of distances.
 - `compute_distance_multisource(V, F, v_ind_list)` Similar to above, but one-off instead of stateful. Returns an array of distances.
+
+### Mesh Signed Distance
+
+Use the [signed heat method](https://nzfeng.github.io/research/SignedHeatMethod/index.html) to compute signed distance on meshes, robust to holes and noise. Repeated solves are fast after initial setup.
+
+```python
+import potpourri3d as pp3d
+
+V, F = # your mesh
+solver = pp3d.MeshSignedHeatSolver(V, F)
+
+'''
+Specify a curve as a sequence of barycentric points
+  * Vertices: (vertex_index, )
+  * Edges: (edge_index, [t]) where t ∈ [0,1] is the parameter along the edge
+  * Faces: (face_index, [tA, tB]) where tA, tB (and optionally, tC) are barycentric coordinates in the face.
+           If tC is not specified, then tC is inferred to be 1 - tA - tB.
+'''
+curves = [
+           [
+             (61, [0.3, 0.3]), # face
+             (7, []), # vertex
+             (16, [0.3, 0.3, 0.4]), # face
+             (11, [0.4]), # edge
+             (71, []), # vertex
+             (20, [0.3, 0.3, 0.4]), # face
+             (13, []), # vertex
+             (58, []) # vertex
+             ]
+         ]
+
+# Compute a distance field combining signed distance to curve sources, and unsigned distance to point sources.
+dist = signed_solver.compute_distance(curves, [], points) 
+
+```
+
+- `MeshSignedHeatMethod.compute_distance(curves, is_signed, points, preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1)`
+  - `curves` a list of lists of source points; each point is specified via barycentric coordinates.
+  - `is_signed` a list of bools, one for each curve in `curves`, indicating whether one should compute signed distance (`True`) or unsigned distance (`False`) to a curve. All `True` by default.
+  - `points` a list of source vertex indices
+  - `preserve_source_normals` whether to additionally constrain the normals of the curve. Generally not necessary.
+  - `level_set_constraint` whether to apply level set constraints, with options "ZeroSet", "None", "Multiple". Generally set to "ZeroSet" (set by default).
+  - `soft_level_set_weight` float; if positive, gives the weight with which the given level set constraint is "softly" enforced (negative by default). Generally not necessary.
 
 ### Mesh Vector Heat
 
@@ -187,10 +233,65 @@ trace_pts = tracer.trace_geodesic_from_vertex(22, np.array((0.3, 0.5, 0.4)))
 - `GeodesicTracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations=None)` similar to above, but from a point in a face. `bary_coords` is a length-3 vector of barycentric coordinates giving the location within the face to start from.
 
 Set `max_iterations` to terminate early after tracing the path through some number of faces/edges (default: no limit).
+
+### Polygon Mesh Distance & Transport
+
+Use the [heat method for unsigned geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/), the [signed heat method](https://nzfeng.github.io/research/SignedHeatMethod/index.html) to compute signed distance, and the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on general polygon meshes (including mixed-degree meshes, such as tri-quad meshes). Repeated solves are fast after initial setup.
+
+```python
+import potpourri3d as pp3d
+
+V, polygons = # your polygon mesh
+solver = pp3d.PolygonMeshHeatSolver(V, F)
+
+# Compute unsigned geodesic distance to vertices 12 and 17
+dist = solver.compute_distance([12, 17])
+
+# Extend the value `0.` from vertex 12 and `1.` from vertex 17. Any vertex 
+# geodesically closer to 12. will take the value 0., and vice versa 
+# (plus some slight smoothing)
+ext = solver.extend_scalar([12, 17], [0.,1.])
+
+# Get the tangent frames which are used by the solver to define tangent data
+# at each vertex
+basisX, basisY, basisN = solver.get_tangent_frames()
+
+# Parallel transport a vector along the surface
+# (and map it to a vector in 3D)
+sourceV = 22
+ext = solver.transport_tangent_vector(sourceV, [6., 6.])
+ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
+
+# Compute signed distance to the oriented curve(s) denoted by a vertex sequence.
+curves = [
+           [9, 10, 12, 13, 51, 48], 
+           [79, 93, 12, 30, 78, 18, 92], 
+           [90, 84, 19, 91, 82, 81, 83]
+         ]
+signed_dist = solver.compute_signed_distance(curves)
+```
+
+- `PolygonMeshHeatSolver(V, polygons, t_coef=1.)` construct an instance of the solver class.
+  - `V` a Nx3 real numpy array of vertices 
+  - `polygons` a list of lists; each sub-list represents a polygon face with 0-based face indices (integers).
+  - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
+- `PolygonMeshHeatSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest source vertex (plus some slight smoothing)
+  - `v_inds` a list of source vertices
+  - `values` a list of scalar values, one for each source vertex
+- `PolygonMeshHeatSolver.get_tangent_frames()` get the coordinate frames used to define tangent data at each vertex. Returned as a tuple of basis-X, basis-Y, and normal axes, each as an Nx3 array. May be necessary for change-of-basis into or out of tangent vector convention.
+- `PolygonMeshHeatSolver.transport_tangent_vectors(v_inds, vectors)` parallel transports a collection of vectors across a surface, such that each vertex takes the vector from its nearest-geodesic-neighbor.
+  - `v_inds` a list of source vertices
+  - `vectors` a list of 2D tangent vectors, one for each source vertex
+- `PolygonMeshHeatSolver.compute_distance(v_inds)` 
+  - `v_inds` a list of source vertices
+- `PolygonMeshHeatSolver.compute_signed_distance(curves, level_set_constraint="ZeroSet")`
+  - `curves` a list of lists of source vertices
+  - `level_set_constraint` whether to apply level set constraints, with options "ZeroSet", "None", "Multiple". Generally set to "ZeroSet" (set by default).
+
  
 ### Point Cloud Distance & Vector Heat
 
-Use the [heat method for geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/) and [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on point clouds. Repeated solves are fast after initial setup.
+Use the [heat method for unsigned geodesic distance](https://www.cs.cmu.edu/~kmcrane/Projects/HeatMethod/), the [signed heat method](https://nzfeng.github.io/research/SignedHeatMethod/index.html) to compute signed distance, and the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on point clouds. Repeated solves are fast after initial setup.
 
 ![point cloud vector heat examples](https://github.com/nmwsharp/potpourri3d/blob/master/media/point_heat_solvers.jpg)
 
@@ -221,6 +322,14 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 
 # Compute the logarithmic map
 logmap = solver.compute_log_map(sourceP)
+
+# Signed distance to the oriented curve(s) denoted by a point sequence.
+curves = [
+           [9, 10, 12, 13, 51, 48], 
+           [79, 93, 12, 30, 78, 18, 92], 
+           [90, 84, 19, 91, 82, 81, 83]
+         ]
+signed_dist = solver.compute_signed_distance(curves, basisN)
 ```
 
 - `PointCloudHeatSolver(P, t_coef=1.)` construct an instance of the solver class.
@@ -238,7 +347,12 @@ logmap = solver.compute_log_map(sourceP)
   - `vectors` a list of 2D tangent vectors, one for each source point
 - `PointCloudHeatSolver.compute_log_map(p_ind)` compute the logarithmic map centered at the given source point
   - `p_ind` index of the source point
-
+- `PointCloudHeatSolver.compute_signed_distance(curves, cloud_normals, preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1)`
+  - `curves` a list of lists of source point indices
+  - `cloud_normals` a list of 3D normal vectors, one for each point in the point cloud
+  - `preserve_source_normals` whether to additionally constrain the normals of the curve. Generally not necessary.
+  - `level_set_constraint` whether to apply level set constraints, with options "ZeroSet", "None", "Multiple". Generally set to "ZeroSet" (set by default).
+  - `soft_level_set_weight` float; if positive, gives the weight with which the given level set constraint is "softly" enforced (negative by default). Generally not necessary.
 
 
 ### Other Point Cloud Routines

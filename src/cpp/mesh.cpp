@@ -202,19 +202,6 @@ public:
     return phi.toVector();
   }
 
-  // // if you just want to specify vertex indices
-  // Vector<double> compute_distance(const std::vector<std::vector<int64_t>>& curves, const std::vector<bool>& isSigned,
-  //                                 const std::vector<int64_t>& points, bool preserveSourceNormals = false,
-  //                                 const std::string& levelSetConstraint = "ZeroSet", double softLevelSetWeight =
-  //                                 -1.0) {
-
-  //   std::vector<Curve> sourceCurves = toSignedCurves(*mesh, curves, isSigned);
-  //   std::vector<SurfacePoint> sourcePoints = toSurfacePoints(*mesh, points);
-  //   SignedHeatOptions solveOptions = toSignedHeatOptions(preserveSourceNormals, levelSetConstraint,
-  //   softLevelSetWeight); VertexData<double> phi = solver->computeDistance(sourceCurves, sourcePoints, solveOptions);
-  //   return phi.toVector();
-  // }
-
 private:
   std::unique_ptr<SurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;

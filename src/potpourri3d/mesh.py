@@ -82,16 +82,6 @@ class MeshSignedHeatSolver():
         return self.bound_solver.compute_distance(curves, curve_signs, points, 
             preserve_source_normals, level_set_constraint, soft_level_set_weight)
 
-    # def compute_distance(self, curves, curve_signs=[],
-    #                      preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1):
-    #     return self.bound_solver.compute_distance(curves, curve_signs, [], 
-    #         preserve_source_normals, level_set_constraint, soft_level_set_weight) 
-
-    # def compute_distance(self, points,
-    #                      preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1):
-    #     return self.bound_solver.compute_distance([], [], points, 
-    #         preserve_source_normals, level_set_constraint, soft_level_set_weight)
-
 
 class PolygonMeshHeatSolver():
 
