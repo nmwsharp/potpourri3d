@@ -6,6 +6,8 @@ using namespace geometrycentral::surface;
 // Convert from intermediary representation -- used for easier Python bindings -- to the input structs used in
 // geometry-central.
 
+SurfacePoint toSurfacePoint(SurfaceMesh& mesh, const std::pair<int64_t, std::vector<double>>& p);
+
 std::vector<Curve> toSignedCurves(SurfaceMesh& mesh,
                                   const std::vector<std::vector<std::pair<int64_t, std::vector<double>>>>& pythonCurves,
                                   const std::vector<bool>& isSigned);

@@ -6,6 +6,15 @@ import scipy.sparse
 
 from .core import *
 
+class MeshFastMarchingDistanceSolver():
+
+    def __init__(self, V, F):
+        validate_mesh(V, F, force_triangular=True, test_indices=True)
+        self.bound_solver = pp3db.MeshFastMarchingDistance(V, F)
+
+    def compute_distance(self, curves, distances=[], sign=False): 
+        return self.bound_solver.compute_distance(curves, distances, sign)
+
 class MeshHeatMethodDistanceSolver():
 
     def __init__(self, V, F, t_coef=1., use_robust=True):

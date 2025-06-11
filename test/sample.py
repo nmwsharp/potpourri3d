@@ -96,6 +96,11 @@ ps_mesh.add_distance_quantity("signed distance", signed_dist)
 ps_mesh.add_distance_quantity("signed distance (barycentric)", sp_dist)
 ps_mesh.add_distance_quantity("mixed distance", mixed_dist)
 
+# Fast marching
+fmm_solver = pp3d.MeshFastMarchingDistanceSolver(V, F)
+fmm_dist = fmm_solver.compute_distance([[(idx, []) for idx in curve_idxs]], sign=True)
+ps_mesh.add_distance_quantity("fast marching distance", fmm_dist)
+
 # Flip geodesics
 path_solver = pp3d.EdgeFlipGeodesicSolver(V,F)
 for k in range(50):

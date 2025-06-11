@@ -30,6 +30,7 @@ python -m pip install potpourri3d --no-binary potpourri3d
 - [Mesh basic utilities](#mesh-basic-utilities)
 - [Mesh Distance](#mesh-distance)
 - [Mesh Signed Distance](#mesh-signed-distance)
+- [Mesh Fast Marching Distance](#mesh-fast-marching-distance)
 - [Mesh Vector Heat](#mesh-vector-heat)
 - [Mesh Geodesic Paths](#mesh-geodesic-paths)
 - [Mesh Geodesic Tracing](#mesh-geodesic-tracing)
@@ -125,17 +126,62 @@ curves = [
          ]
 
 # Compute a distance field combining signed distance to curve sources, and unsigned distance to point sources.
-dist = signed_solver.compute_distance(curves, [], points) 
-
+dist = solver.compute_distance(curves, [], points) 
 ```
 
-- `MeshSignedHeatMethod.compute_distance(curves, is_signed, points, preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1)`
+- `MeshSignedHeatSolver.compute_distance(curves, is_signed, points, preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1)`
   - `curves` a list of lists of source points; each point is specified via barycentric coordinates.
   - `is_signed` a list of bools, one for each curve in `curves`, indicating whether one should compute signed distance (`True`) or unsigned distance (`False`) to a curve. All `True` by default.
   - `points` a list of source vertex indices
   - `preserve_source_normals` whether to additionally constrain the normals of the curve. Generally not necessary.
   - `level_set_constraint` whether to apply level set constraints, with options "ZeroSet", "None", "Multiple". Generally set to "ZeroSet" (set by default).
   - `soft_level_set_weight` float; if positive, gives the weight with which the given level set constraint is "softly" enforced (negative by default). Generally not necessary.
+
+### Mesh Fast Marching Distance
+
+```python
+import potpourri3d as pp3d
+
+V, F = # your mesh
+solver = pp3d.MeshFastMarchingDistanceSolver(V, F)
+
+'''
+Specify each curve as a sequence of barycentric points
+  * Vertices: (vertex_index, )
+  * Edges: (edge_index, [t]) where t ∈ [0,1] is the parameter along the edge
+  * Faces: (face_index, [tA, tB]) where tA, tB (and optionally, tC) are barycentric coordinates in the face.
+           If tC is not specified, then tC is inferred to be 1 - tA - tB.
+'''
+curves = [
+           [
+             (61, [0.3, 0.3]), # face
+             (7, []), # vertex
+             (16, [0.3, 0.3, 0.4]), # face
+             (11, [0.4]), # edge
+             (71, []), # vertex
+             (20, [0.3, 0.3, 0.4]), # face
+             (13, []), # vertex
+             (58, []) # vertex
+             ]
+         ]
+
+# Compute a signed distance field to a set of closed curves.
+signed_dist = solver.compute_distance(curves, sign=True) 
+
+# Compute unsigned to a set of points.
+points = [
+          [
+            (71, []), # vertex
+            (18, [0.5]) # edge
+          ]
+         ]
+unsigned_dist = solver.compute_distance(points, sign=False) 
+```
+
+- `MeshFastMarchingDistanceSolver.compute_distance(curves, distances=[], sign=False)`
+  - `curves` a list of lists of source points; each point is specified via barycentric coordinates.
+  - `distances` a list of lists of initial distances. Default initial distances are 0.
+  - `sign` if False, compute unsigned distance; if True, compute signed distance. (When initial distances are not 0, "signed" means that the gradient of distance is continuous across the source curves.)
 
 ### Mesh Vector Heat
 

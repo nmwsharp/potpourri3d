@@ -1,5 +1,23 @@
 #include "heat_helpers.h"
 
+SurfacePoint toSurfacePoint(SurfaceMesh& mesh, const std::pair<int64_t, std::vector<double>>& p) {
+
+  size_t elementIndex = p.first;
+  const std::vector<double>& baryCoords = p.second;
+
+  if (baryCoords.size() < 1) {
+    return SurfacePoint(mesh.vertex(elementIndex));
+  } else if (baryCoords.size() == 1) {
+    return SurfacePoint(mesh.edge(elementIndex), baryCoords[0]);
+  } else if (baryCoords.size() >= 2) {
+    double tC = (baryCoords.size() == 3) ? baryCoords[2] : 1.0 - baryCoords[0] - baryCoords[1];
+    Vector3 faceCoords = {baryCoords[0], baryCoords[1], tC};
+    return SurfacePoint(mesh.face(elementIndex), faceCoords);
+  } else {
+    throw std::runtime_error("Invalid barycentric coordinates for surface point.");
+  }
+}
+
 std::vector<Curve> toSignedCurves(SurfaceMesh& mesh,
                                   const std::vector<std::vector<std::pair<int64_t, std::vector<double>>>>& pythonCurves,
                                   const std::vector<bool>& isSigned) {
@@ -11,20 +29,7 @@ std::vector<Curve> toSignedCurves(SurfaceMesh& mesh,
     curve.isSigned = (i < isSigned.size()) ? isSigned[i] : true; // default to signed if not specified
 
     for (const auto& node : pythonCurves[i]) {
-      size_t elementIndex = node.first;
-      const std::vector<double>& baryCoords = node.second;
-
-      if (baryCoords.size() < 1) {
-        curve.nodes.emplace_back(mesh.vertex(elementIndex));
-      } else if (baryCoords.size() == 1) {
-        curve.nodes.emplace_back(mesh.edge(elementIndex), baryCoords[0]);
-      } else if (baryCoords.size() >= 2) {
-        double tC = (baryCoords.size() == 3) ? baryCoords[2] : 1.0 - baryCoords[0] - baryCoords[1];
-        Vector3 faceCoords = {baryCoords[0], baryCoords[1], tC};
-        curve.nodes.emplace_back(mesh.face(elementIndex), faceCoords);
-      } else {
-        throw std::runtime_error("Invalid barycentric coordinates for a curve node.");
-      }
+      curve.nodes.push_back(toSurfacePoint(mesh, node));
     }
     curves.push_back(curve);
   }
@@ -65,20 +70,7 @@ std::vector<SurfacePoint> toSurfacePoints(SurfaceMesh& mesh,
   std::vector<SurfacePoint> points;
 
   for (const auto& point : pythonPoints) {
-    size_t elementIndex = point.first;
-    const std::vector<double>& baryCoords = point.second;
-
-    if (baryCoords.size() < 1) {
-      points.emplace_back(mesh.vertex(elementIndex));
-    } else if (baryCoords.size() == 1) {
-      points.emplace_back(mesh.edge(elementIndex), baryCoords[0]);
-    } else if (baryCoords.size() >= 2) {
-      double tC = (baryCoords.size() == 3) ? baryCoords[2] : 1.0 - baryCoords[0] - baryCoords[1];
-      Vector3 faceCoords = {baryCoords[0], baryCoords[1], tC};
-      points.emplace_back(mesh.face(elementIndex), faceCoords);
-    } else {
-      throw std::runtime_error("Invalid barycentric coordinates for surface point.");
-    }
+    points.push_back(toSurfacePoint(mesh, point));
   }
 
   return points;

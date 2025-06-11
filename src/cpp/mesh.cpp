@@ -1,5 +1,6 @@
 #include "geometrycentral/numerical/linear_algebra_utilities.h"
 #include "geometrycentral/surface/edge_length_geometry.h"
+#include "geometrycentral/surface/fast_marching_method.h"
 #include "geometrycentral/surface/flip_geodesics.h"
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
@@ -31,6 +32,48 @@ using namespace geometrycentral::surface;
 // For overloaded functions, with C++11 compiler only
 template <typename... Args>
 using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
+
+// Wrapper for FMMDistance that constructs an internal mesh and geometry
+class FastMarchingDistanceEigen {
+
+public:
+  FastMarchingDistanceEigen(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+    // Construct the internal mesh and geometry
+    mesh.reset(new SurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+  }
+
+  Vector<double> compute_distance(std::vector<std::vector<std::pair<int64_t, std::vector<double>>>> curves,
+                                  std::vector<std::vector<double>> distances, bool sign = false) {
+
+    size_t nCurves = curves.size();
+    std::vector<std::vector<std::pair<SurfacePoint, double>>> initialDistances(nCurves);
+    std::vector<std::vector<double>> initDists(nCurves);
+    for (size_t i = 0; i < nCurves; i++) initDists[i] = std::vector<double>(curves[i].size(), 0.);
+
+    for (size_t i = 0; i < std::min(distances.size(), nCurves); i++) {
+      for (size_t j = 0; j < std::min(distances[i].size(), curves[i].size()); j++) {
+        initDists[i][j] = distances[i][j];
+      }
+    }
+    for (size_t i = 0; i < nCurves; i++) {
+      for (size_t j = 0; j < curves[i].size(); j++) {
+        initialDistances[i].emplace_back(toSurfacePoint(*mesh, curves[i][j]), initDists[i][j]);
+      }
+    }
+    VertexData<double> phi = FMMDistance(*geom, initialDistances, sign);
+    return phi.toVector();
+  }
+
+private:
+  std::unique_ptr<SurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+};
 
 
 // A wrapper class for the heat method solver, which exposes Eigen in/out
@@ -532,6 +575,10 @@ private:
 // Actual binding code
 // clang-format off
 void bind_mesh(py::module& m) {
+
+  py::class_<FastMarchingDistanceEigen>(m, "MeshFastMarchingDistance")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("compute_distance", &FastMarchingDistanceEigen::compute_distance, py::arg("curves"), py::arg("distances"), py::arg("sign"));
 
   py::class_<HeatMethodDistanceEigen>(m, "MeshHeatMethodDistance")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double, bool>())
