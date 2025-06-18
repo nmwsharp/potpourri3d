@@ -15,6 +15,19 @@ class MeshFastMarchingDistanceSolver():
     def compute_distance(self, curves, distances=[], sign=False): 
         return self.bound_solver.compute_distance(curves, distances, sign)
 
+class MeshMarchingTrianglesSolver():
+
+    def __init__(self, V, F):
+        validate_mesh(V, F, force_triangular=True, test_indices=True)
+        self.bound_solver = pp3db.MeshMarchingTriangles(V, F)
+
+    def marching_triangles(self, u, isoval=0.): 
+        return self.bound_solver.marching_triangles(u, isoval)
+
+def marching_triangles(V, F, u, isoval=0.): 
+    solver = MeshMarchingTrianglesSolver(V, F)
+    return solver.marching_triangles(u, isoval)
+
 class MeshHeatMethodDistanceSolver():
 
     def __init__(self, V, F, t_coef=1., use_robust=True):
@@ -78,12 +91,7 @@ class MeshSignedHeatSolver():
         
         '''
         Args:
-            curves [list]: List of curves. Each curve is a list of tuples (element_index, barycentric_coords).
-            * Vertices: (vertex_index, )
-            * Edges: (edge_index, [t]) where t ∈ [0,1] is the parameter along the edge
-            * Faces: (face_index, [tA, tB]) where tA, tB (and optionally, tC) are barycentric coordinates in the face.
-                     If tC is not specified, then tC is inferred to be 1 - tA - tB.
-
+            curves [list]: List of curves. Each curve is a list of tuples (element_indices, barycentric_coords).
             curve_signs [list]: list of bools, indicating whether each curve in `curves' 
                                 is signed (true) or unsigned (false). 
                                 By default, curves are assumed to be signed (oriented).
@@ -240,3 +248,7 @@ def vertex_areas(V, F):
     vertex_area /= 3.
     
     return vertex_area
+
+def edges(V, F):
+    validate_mesh(V, F, force_triangular=False)
+    return pp3db.edges(V, F)

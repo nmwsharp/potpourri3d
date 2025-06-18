@@ -4,6 +4,7 @@
 #include "geometrycentral/surface/flip_geodesics.h"
 #include "geometrycentral/surface/heat_method_distance.h"
 #include "geometrycentral/surface/manifold_surface_mesh.h"
+#include "geometrycentral/surface/marching_triangles.h"
 #include "geometrycentral/surface/mesh_graph_algorithms.h"
 #include "geometrycentral/surface/polygon_mesh_heat_solver.h"
 #include "geometrycentral/surface/simple_polygon_mesh.h"
@@ -33,6 +34,18 @@ using namespace geometrycentral::surface;
 template <typename... Args>
 using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
 
+// Return the E x 2 integer-valued matrix representing the edges of a mesh as internal to geometry-central.
+DenseMatrix<int64_t> edges(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+
+  std::unique_ptr<SurfaceMesh> mesh(new SurfaceMesh(faces));
+  DenseMatrix<int64_t> E(mesh->nEdges(), 2);
+  for (size_t i = 0; i < mesh->nEdges(); i++) {
+    E(i, 0) = mesh->edge(i).firstVertex().getIndex();
+    E(i, 1) = mesh->edge(i).secondVertex().getIndex();
+  }
+  return E;
+}
+
 // Wrapper for FMMDistance that constructs an internal mesh and geometry
 class FastMarchingDistanceEigen {
 
@@ -46,6 +59,8 @@ public:
         geom->inputVertexPositions[i][j] = verts(i, j);
       }
     }
+    geom->requireVertexIndices();
+    geom->requireEdgeIndices();
   }
 
   Vector<double> compute_distance(std::vector<std::vector<std::pair<int64_t, std::vector<double>>>> curves,
@@ -75,6 +90,60 @@ private:
   std::unique_ptr<VertexPositionGeometry> geom;
 };
 
+// Wrapper for marching triangles that constructs an internal mesh and geometry
+class MarchingTrianglesEigen {
+
+public:
+  MarchingTrianglesEigen(DenseMatrix<double> verts, DenseMatrix<int64_t> faces) {
+    // Construct the internal mesh and geometry
+    mesh.reset(new SurfaceMesh(faces));
+    geom.reset(new VertexPositionGeometry(*mesh));
+    for (size_t i = 0; i < mesh->nVertices(); i++) {
+      for (size_t j = 0; j < 3; j++) {
+        geom->inputVertexPositions[i][j] = verts(i, j);
+      }
+    }
+
+    geom->requireVertexIndices();
+    geom->requireEdgeIndices();
+    geom->requireFaceIndices();
+  }
+
+  std::vector<std::vector<std::pair<int64_t, std::vector<double>>>> marching_triangles(DenseMatrix<double> u,
+                                                                                       double isoval) {
+
+    VertexData<double> f(*mesh, u);
+    std::vector<std::vector<SurfacePoint>> curves = marchingTriangles(*geom, f, isoval);
+    size_t nCurves = curves.size();
+    std::vector<std::vector<std::pair<int64_t, std::vector<double>>>> contour(nCurves);
+    for (size_t i = 0; i < nCurves; i++) {
+      std::pair<int64_t, std::vector<double>> pt;
+      for (size_t j = 0; j < curves[i].size(); j++) {
+        const SurfacePoint& p = curves[i][j];
+        switch (p.type) {
+        case (SurfacePointType::Vertex): {
+          pt.first = geom->vertexIndices[p.vertex];
+          break;
+        }
+        case (SurfacePointType::Edge): {
+          pt.first = geom->edgeIndices[p.edge];
+          pt.second = {p.tEdge};
+          break;
+        }
+        default: {
+          break;
+        }
+        }
+        contour[i].push_back(pt);
+      }
+    }
+    return contour;
+  }
+
+private:
+  std::unique_ptr<SurfaceMesh> mesh;
+  std::unique_ptr<VertexPositionGeometry> geom;
+};
 
 // A wrapper class for the heat method solver, which exposes Eigen in/out
 class HeatMethodDistanceEigen {
@@ -576,9 +645,15 @@ private:
 // clang-format off
 void bind_mesh(py::module& m) {
 
+  m.def("edges", &edges, py::arg("verts"), py::arg("faces"));
+
   py::class_<FastMarchingDistanceEigen>(m, "MeshFastMarchingDistance")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
         .def("compute_distance", &FastMarchingDistanceEigen::compute_distance, py::arg("curves"), py::arg("distances"), py::arg("sign"));
+
+  py::class_<MarchingTrianglesEigen>(m, "MeshMarchingTriangles")
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
+        .def("marching_triangles", &MarchingTrianglesEigen::marching_triangles, py::arg("u"), py::arg("isoval"));
 
   py::class_<HeatMethodDistanceEigen>(m, "MeshHeatMethodDistance")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double, bool>())
