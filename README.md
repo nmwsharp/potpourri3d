@@ -66,7 +66,7 @@ Read/write meshes and point clouds from some common formats.
 - `vertex_areas(V, F)` computes a length-V real numpy array of vertex areas for a triangular mesh (equal to 1/3 the sum of the incident face areas)
 - `cotan_laplacian(V, F, denom_eps=0.)` computes the cotan-Laplace matrix as a VxV real sparse csr scipy matrix. Optionally, set `denom_eps` to a small value like `1e-6` to get some additional stability in the presence of degenerate faces.
 - `edges(V, F)` returns the Ex2 integer-valued matrix representing the edges of the given surface mesh, as constructed internally. The i-th row gives the indices of the i-th edge's two endpoint vertices.
-- _Barycentric points_ are used as input and output to some algorithms below, specified as 2-tuples of the form `(element_indices, barycentric_coordinates)`:
+- _Barycentric points_ are used as input and output to some algorithms below, specified as 2-tuples of the form `(element_index, barycentric_coordinates)`:
   - Vertices are specified as `(vertex_index, )`
   - Edges are specified as `(edge_index, [t])` where t ∈ [0,1] is the parameter along the edge
   - Faces are specified as `(face_index, [tA, tB])` where `tA`, `tB` (and optionally, `tC`) are barycentric coordinates in the face. If `tC` is not specified, then `tC` is inferred to be `1 - tA - tB`.
