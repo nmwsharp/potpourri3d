@@ -1,6 +1,6 @@
 [project]
 name = "potpourri3d"
-version = "1.2.1"
+version = "1.2.2"
 description = "An invigorating blend of 3D geometry tools in Python." 
 readme = "README.md"
 license.file = "LICENSE"
