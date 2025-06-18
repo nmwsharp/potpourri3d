@@ -6,6 +6,28 @@ import scipy.sparse
 
 from .core import *
 
+class MeshFastMarchingDistanceSolver():
+
+    def __init__(self, V, F):
+        validate_mesh(V, F, force_triangular=True, test_indices=True)
+        self.bound_solver = pp3db.MeshFastMarchingDistance(V, F)
+
+    def compute_distance(self, curves, distances=[], sign=False): 
+        return self.bound_solver.compute_distance(curves, distances, sign)
+
+class MeshMarchingTrianglesSolver():
+
+    def __init__(self, V, F):
+        validate_mesh(V, F, force_triangular=True, test_indices=True)
+        self.bound_solver = pp3db.MeshMarchingTriangles(V, F)
+
+    def marching_triangles(self, u, isoval=0.): 
+        return self.bound_solver.marching_triangles(u, isoval)
+
+def marching_triangles(V, F, u, isoval=0.): 
+    solver = MeshMarchingTrianglesSolver(V, F)
+    return solver.marching_triangles(u, isoval)
+
 class MeshHeatMethodDistanceSolver():
 
     def __init__(self, V, F, t_coef=1., use_robust=True):
@@ -56,6 +78,53 @@ class MeshVectorHeatSolver():
     
     def compute_log_map(self, v_ind):
         return self.bound_solver.compute_log_map(v_ind)
+
+
+class MeshSignedHeatSolver():
+
+    def __init__(self, V, F, t_coef=1.):
+        validate_mesh(V, F, force_triangular=True, test_indices=True)
+        self.bound_solver = pp3db.MeshSignedHeatMethod(V, F, t_coef)
+
+    def compute_distance(self, curves, curve_signs=[], points=[],
+                         preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1):
+        
+        '''
+        Args:
+            curves [list]: List of curves. Each curve is a list of tuples (element_indices, barycentric_coords).
+            curve_signs [list]: list of bools, indicating whether each curve in `curves' 
+                                is signed (true) or unsigned (false). 
+                                By default, curves are assumed to be signed (oriented).
+        '''
+        return self.bound_solver.compute_distance(curves, curve_signs, points, 
+            preserve_source_normals, level_set_constraint, soft_level_set_weight)
+
+
+class PolygonMeshHeatSolver():
+
+    def __init__(self, V, F, t_coef=1.):
+        validate_mesh(V, F, force_triangular=False, test_indices=True)
+        self.bound_solver = pp3db.PolygonMeshHeatSolver(V, F, t_coef)
+
+    def compute_distance(self, v_inds):
+        return self.bound_solver.compute_distance(v_inds)
+
+    def extend_scalar(self, v_inds, values):
+        if len(v_inds) != len(values):
+            raise ValueError("source vertex indices and values array should be same shape")
+        return self.bound_solver.extend_scalar(v_inds, values)
+
+    def get_tangent_frames(self):
+        return self.bound_solver.get_tangent_frames()
+    
+    def transport_tangent_vectors(self, v_inds, vectors):
+        if len(v_inds) != len(vectors):
+            raise ValueError("source vertex indices and values array should be same length")
+        return self.bound_solver.transport_tangent_vectors(v_inds, vectors)
+
+    def compute_signed_distance(self, curves, level_set_constraint="ZeroSet"):
+        return self.bound_solver.compute_signed_distance(curves, level_set_constraint)
+
 
 class EdgeFlipGeodesicSolver():
 
@@ -179,3 +248,7 @@ def vertex_areas(V, F):
     vertex_area /= 3.
     
     return vertex_area
+
+def edges(V, F):
+    validate_mesh(V, F, force_triangular=False)
+    return pp3db.edges(V, F)

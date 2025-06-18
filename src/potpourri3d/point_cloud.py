@@ -36,6 +36,11 @@ class PointCloudHeatSolver():
     def compute_log_map(self, p_ind):
         return self.bound_solver.compute_log_map(p_ind)
 
+    def compute_signed_distance(self, curves, cloud_normals, 
+                                preserve_source_normals=False, level_set_constraint="ZeroSet", soft_level_set_weight=-1):
+        return self.bound_solver.compute_signed_distance(curves, cloud_normals, 
+            preserve_source_normals, level_set_constraint, soft_level_set_weight)
+
 
 class PointCloudLocalTriangulation():
 
