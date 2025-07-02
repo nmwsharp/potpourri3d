@@ -115,39 +115,43 @@ class TestCore(unittest.TestCase):
     def test_mesh_vector_heat(self):
 
         V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
-       
-        solver = pp3d.MeshVectorHeatSolver(V,F)
 
-        # Scalar extension
-        ext = solver.extend_scalar([1, 22], [0., 6.])
-        self.assertEqual(ext.shape[0], V.shape[0])
-        self.assertGreaterEqual(np.amin(ext), 0.)
-        
-        # Get frames
-        basisX, basisY, basisN = solver.get_tangent_frames()
-        self.assertEqual(basisX.shape[0], V.shape[0])
-        self.assertEqual(basisY.shape[0], V.shape[0])
-        self.assertEqual(basisN.shape[0], V.shape[0])
-        # TODO could check orthogonal
-        
-        # Get connection Laplacian
-        L_conn = solver.get_connection_laplacian()
-        self.assertTrue(isinstance(L_conn, scipy.sparse.csc_matrix))
-        max_diag_imag = np.max(np.abs(L_conn.diagonal().imag))
-        self.assertLess(max_diag_imag, 1e-4)
+        for use_intrinsic_delaunay in [False, True]:
 
-        # Vector heat (transport vector)
-        ext = solver.transport_tangent_vector(1, [6., 6.])
-        self.assertEqual(ext.shape[0], V.shape[0])
-        self.assertEqual(ext.shape[1], 2)
-        ext = solver.transport_tangent_vectors([1, 22], [[6., 6.], [3., 4.]])
-        self.assertEqual(ext.shape[0], V.shape[0])
-        self.assertEqual(ext.shape[1], 2)
+            solver = pp3d.MeshVectorHeatSolver(V, F, use_intrinsic_delaunay=use_intrinsic_delaunay)
 
-        # Vector heat (log map)
-        logmap = solver.compute_log_map(1)
-        self.assertEqual(logmap.shape[0], V.shape[0])
-        self.assertEqual(logmap.shape[1], 2)
+            # Scalar extension
+            ext = solver.extend_scalar([1, 22], [0., 6.])
+            self.assertEqual(ext.shape[0], V.shape[0])
+            self.assertGreaterEqual(np.amin(ext), 0.)
+            
+            # Get frames
+            basisX, basisY, basisN = solver.get_tangent_frames()
+            self.assertEqual(basisX.shape[0], V.shape[0])
+            self.assertEqual(basisY.shape[0], V.shape[0])
+            self.assertEqual(basisN.shape[0], V.shape[0])
+            # TODO could check orthogonal
+            
+            # Get connection Laplacian
+            L_conn = solver.get_connection_laplacian()
+            self.assertTrue(isinstance(L_conn, scipy.sparse.csc_matrix))
+            max_diag_imag = np.max(np.abs(L_conn.diagonal().imag))
+            self.assertLess(max_diag_imag, 1e-4)
+
+            # Vector heat (transport vector)
+            ext = solver.transport_tangent_vector(1, [6., 6.])
+            self.assertEqual(ext.shape[0], V.shape[0])
+            self.assertEqual(ext.shape[1], 2)
+            ext = solver.transport_tangent_vectors([1, 22], [[6., 6.], [3., 4.]])
+            self.assertEqual(ext.shape[0], V.shape[0])
+            self.assertEqual(ext.shape[1], 2)
+
+            # Vector heat (log map)
+            for strategy in [None, "VectorHeat", "AffineLocal", "AffineAdaptive"]:
+                kwargs = {} if strategy is None else {"strategy": strategy}
+                logmap = solver.compute_log_map(1, **kwargs)
+                self.assertEqual(logmap.shape[0], V.shape[0])
+                self.assertEqual(logmap.shape[1], 2)
     
     def test_mesh_cotan_laplace(self):
 

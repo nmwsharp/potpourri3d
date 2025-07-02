@@ -110,3 +110,16 @@ SignedHeatOptions toSignedHeatOptions(bool preserveSourceNormals, const std::str
   options.softLevelSetWeight = softLevelSetWeight;
   return options;
 }
+
+LogMapStrategy toLogmapStrategy(std::string strategyName) {
+  if (strategyName == "VectorHeat") {
+    return LogMapStrategy::VectorHeat;
+  } else if (strategyName == "AffineLocal") {
+    return LogMapStrategy::AffineLocal;
+  } else if (strategyName == "AffineAdaptive") {
+    return LogMapStrategy::AffineAdaptive;
+  } else {
+    throw std::runtime_error("Invalid logmap strategy: '" + strategyName +
+                             "' (expected 'VectorHeat', 'AffineLocal', or 'AffineAdaptive')");
+  }
+}

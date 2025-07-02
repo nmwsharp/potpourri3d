@@ -7,6 +7,7 @@
 #include "geometrycentral/surface/marching_triangles.h"
 #include "geometrycentral/surface/mesh_graph_algorithms.h"
 #include "geometrycentral/surface/polygon_mesh_heat_solver.h"
+#include "geometrycentral/surface/signpost_intrinsic_triangulation.h"
 #include "geometrycentral/surface/simple_polygon_mesh.h"
 #include "geometrycentral/surface/surface_mesh.h"
 #include "geometrycentral/surface/surface_mesh_factories.h"
@@ -15,6 +16,7 @@
 #include "geometrycentral/surface/vertex_position_geometry.h"
 #include "geometrycentral/utilities/eigen_interop_helpers.h"
 
+#include <memory>
 #include <pybind11/eigen.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -194,7 +196,9 @@ class VectorHeatMethodEigen {
   // TODO use intrinsic triangulations here
 
 public:
-  VectorHeatMethodEigen(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, double tCoef = 1.0) {
+  VectorHeatMethodEigen(DenseMatrix<double> verts, DenseMatrix<int64_t> faces, double tCoef = 1.0,
+                        bool useIntrinsicDelaunay_ = true)
+      : useIntrinsicDelaunay(useIntrinsicDelaunay_) {
 
     // Construct the internal mesh and geometry
     mesh.reset(new ManifoldSurfaceMesh(faces));
@@ -205,15 +209,23 @@ public:
       }
     }
 
-    // Build the solver
-    solver.reset(new VectorHeatMethodSolver(*geom, tCoef));
+    if (useIntrinsicDelaunay) {
+      // Build the intrinsic triangulation, if using
+      signpostTri.reset(new SignpostIntrinsicTriangulation(*mesh, *geom));
+      signpostTri->flipToDelaunay();
+
+      solver.reset(new VectorHeatMethodSolver(*signpostTri, tCoef));
+    } else {
+      solver.reset(new VectorHeatMethodSolver(*geom, tCoef));
+    }
   }
 
   // Extend scalars from a collection of vertices
   Vector<double> extend_scalar(Vector<int64_t> sourceVerts, Vector<double> values) {
     std::vector<std::tuple<Vertex, double>> sources;
     for (size_t i = 0; i < sourceVerts.rows(); i++) {
-      sources.emplace_back(mesh->vertex(sourceVerts(i)), values(i));
+      sources.emplace_back(get_compute_geom()->mesh.vertex(sourceVerts(i)), values(i));
+      // ^^^ works on intrinsic if using, because vertices are unchanged
     }
     VertexData<double> ext = solver->extendScalar(sources);
     return ext.toVector();
@@ -231,6 +243,7 @@ public:
     VertexData<Vector3> basisX(*mesh);
     VertexData<Vector3> basisY(*mesh);
     for (Vertex v : mesh->vertices()) {
+      // we always want to do this on the input mesh even if using intrinsic
       basisX[v] = geom->vertexTangentBasis[v][0];
       basisY[v] = geom->vertexTangentBasis[v][1];
     }
@@ -240,9 +253,10 @@ public:
   }
 
   SparseMatrix<std::complex<double>> get_connection_laplacian() {
-    geom->requireVertexConnectionLaplacian();
-    SparseMatrix<std::complex<double>> Lconn = geom->vertexConnectionLaplacian;
-    geom->unrequireVertexConnectionLaplacian();
+
+    get_compute_geom()->requireVertexConnectionLaplacian();
+    SparseMatrix<std::complex<double>> Lconn = get_compute_geom()->vertexConnectionLaplacian;
+    get_compute_geom()->unrequireVertexConnectionLaplacian();
     return Lconn;
   }
 
@@ -252,7 +266,8 @@ public:
     // Pack it as a Vector2
     std::vector<std::tuple<Vertex, Vector2>> sources;
     for (size_t i = 0; i < sourceVerts.rows(); i++) {
-      sources.emplace_back(mesh->vertex(sourceVerts(i)), Vector2{values(i, 0), values(i, 1)});
+      sources.emplace_back(get_compute_geom()->mesh.vertex(sourceVerts(i)), Vector2{values(i, 0), values(i, 1)});
+      // ^^^ works on intrinsic if using, because vertices and their tangent spaces are unchanged
     }
     VertexData<Vector2> ext = solver->transportTangentVectors(sources);
 
@@ -263,21 +278,31 @@ public:
 
     // Pack it as a Vector2
     std::vector<std::tuple<Vertex, Vector2>> sources;
-    sources.emplace_back(mesh->vertex(sourceVert), Vector2{values(0), values(1)});
+    sources.emplace_back(get_compute_geom()->mesh.vertex(sourceVert), Vector2{values(0), values(1)});
     VertexData<Vector2> ext = solver->transportTangentVectors(sources);
 
     return EigenMap<double, 2>(ext);
   }
 
 
-  DenseMatrix<double> compute_log_map(int64_t sourceVert) {
-    return EigenMap<double, 2>(solver->computeLogMap(mesh->vertex(sourceVert)));
+  DenseMatrix<double> compute_log_map(int64_t sourceVert, std::string strategy) {
+    LogMapStrategy strategyEnum = toLogmapStrategy(strategy);
+    return EigenMap<double, 2>(solver->computeLogMap(get_compute_geom()->mesh.vertex(sourceVert), strategyEnum));
   }
 
 private:
+  const bool useIntrinsicDelaunay;
+  std::unique_ptr<SignpostIntrinsicTriangulation> signpostTri;
+
   std::unique_ptr<ManifoldSurfaceMesh> mesh;
   std::unique_ptr<VertexPositionGeometry> geom;
   std::unique_ptr<VectorHeatMethodSolver> solver;
+
+  // helpers
+  IntrinsicGeometryInterface* get_compute_geom() {
+    return useIntrinsicDelaunay ? static_cast<IntrinsicGeometryInterface*>(signpostTri.get())
+                                : static_cast<IntrinsicGeometryInterface*>(geom.get());
+  }
 };
 
 // A wrapper class for the signed heat method solver, which exposes Eigen in/out
@@ -662,13 +687,13 @@ void bind_mesh(py::module& m) {
  
 
   py::class_<VectorHeatMethodEigen>(m, "MeshVectorHeatMethod")
-        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double>())
+        .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double, bool>())
         .def("extend_scalar", &VectorHeatMethodEigen::extend_scalar, py::arg("source_verts"), py::arg("values"))
         .def("get_tangent_frames", &VectorHeatMethodEigen::get_tangent_frames)
         .def("get_connection_laplacian", &VectorHeatMethodEigen::get_connection_laplacian)
         .def("transport_tangent_vector", &VectorHeatMethodEigen::transport_tangent_vector, py::arg("source_vert"), py::arg("vector"))
         .def("transport_tangent_vectors", &VectorHeatMethodEigen::transport_tangent_vectors, py::arg("source_verts"), py::arg("vectors"))
-        .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"));
+        .def("compute_log_map", &VectorHeatMethodEigen::compute_log_map, py::arg("source_vert"), py::arg("strategy"));
 
   py::class_<SignedHeatMethodEigen>(m, "MeshSignedHeatMethod")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>, double>())

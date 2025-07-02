@@ -1,4 +1,5 @@
 #include "geometrycentral/surface/signed_heat_method.h"
+#include "geometrycentral/surface/vector_heat_method.h"
 
 using namespace geometrycentral;
 using namespace geometrycentral::surface;
@@ -26,3 +27,6 @@ std::vector<SurfacePoint> toSurfacePoints(SurfaceMesh& mesh, const std::vector<i
 SignedHeatOptions toSignedHeatOptions(bool preserveSourceNormals = false,
                                       const std::string& levelSetConstraint = "ZeroSet",
                                       double softLevelSetWeight = -1.);
+
+
+LogMapStrategy toLogmapStrategy(std::string strategyName);

@@ -51,9 +51,9 @@ def compute_distance_multisource(V, F, v_inds):
 
 class MeshVectorHeatSolver():
 
-    def __init__(self, V, F, t_coef=1.):
+    def __init__(self, V, F, t_coef=1., use_intrinsic_delaunay=True):
         validate_mesh(V, F, force_triangular=True, test_indices=True)
-        self.bound_solver = pp3db.MeshVectorHeatMethod(V, F, t_coef)
+        self.bound_solver = pp3db.MeshVectorHeatMethod(V, F, t_coef, use_intrinsic_delaunay)
 
     def extend_scalar(self, v_inds, values):
         if len(v_inds) != len(values):
@@ -76,8 +76,8 @@ class MeshVectorHeatSolver():
             raise ValueError("source vertex indices and values array should be same length")
         return self.bound_solver.transport_tangent_vectors(v_inds, vectors)
     
-    def compute_log_map(self, v_ind):
-        return self.bound_solver.compute_log_map(v_ind)
+    def compute_log_map(self, v_ind, strategy="AffineLocal"):
+        return self.bound_solver.compute_log_map(v_ind, strategy)
 
 
 class MeshSignedHeatSolver():
