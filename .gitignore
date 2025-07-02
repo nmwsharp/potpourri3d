@@ -12,6 +12,7 @@ test/*.obj
 test/*.ply
 
 # Editor and OS things
+.cache
 imgui.ini
 .polyscope.ini
 .DS_Store
