@@ -181,7 +181,7 @@ unsigned_dist = solver.compute_distance(points, sign=False)
 
 ### Mesh Vector Heat
 
-Use the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) to compute various interpolation & vector-based quantities on meshes. Repeated solves are fast after initial setup.
+Use the [vector heat method](https://nmwsharp.com/research/vector-heat-method/) and [affine heat method](https://www.yousufsoliman.com/projects/the-affine-heat-method.html) to compute various interpolation & vector-based quantities on meshes. Repeated solves are fast after initial setup.
 
 ```python
 import potpourri3d as pp3d
@@ -209,10 +209,11 @@ ext3D = ext[:,0,np.newaxis] * basisX +  ext[:,1,np.newaxis] * basisY
 logmap = solver.compute_log_map(sourceV)
 ```
 
-- `MeshVectorHeatSolver(V, F, t_coef=1.)` construct an instance of the solver class.
+- `MeshVectorHeatSolver(V, F, t_coef=1., useIntrinsicDelaunay=True)` construct an instance of the solver class.
   - `V` a Nx3 real numpy array of vertices 
   - `F` a Mx3 integer numpy array of faces, with 0-based vertex indices (triangle meshes only, should be manifold).
   - `t_coef` set the time used for short-time heat flow. Generally don't change this. If necessary, larger values may make the solution more stable at the cost of smoothing it out.
+  - `useIntrinsicDelaunay` if true, an [intrinsic triangulation](https://geometry-central.net/surface/intrinsic_triangulations/basics/) is used internally to improve robustness
 - `MeshVectorHeatSolver.extend_scalar(v_inds, values)` nearest-geodesic-neighbor interpolate values defined at vertices. Vertices will take the value from the closest source vertex (plus some slight smoothing)
   - `v_inds` a list of source vertices
   - `values` a list of scalar values, one for each source vertex
@@ -224,8 +225,9 @@ logmap = solver.compute_log_map(sourceV)
 - `MeshVectorHeatSolver.transport_tangent_vectors(v_inds, vectors)` parallel transports a collection of vectors across a surface, such that each vertex takes the vector from its nearest-geodesic-neighbor.
   - `v_inds` a list of source vertices
   - `vectors` a list of 2D tangent vectors, one for each source vertex
-- `MeshVectorHeatSolver.compute_log_map(v_ind)` compute the logarithmic map centered at the given source vertex
+- `MeshVectorHeatSolver.compute_log_map(v_ind, strategy='AffineLocal')` compute the logarithmic map centered at the given source vertex
   - `v_ind` index of the source vertex
+  - `strategy` one of `'VectorHeat'`,`'AffineLocal'`, `'AffineAdaptive'`, see [here for an explanation](https://geometry-central.net/surface/algorithms/vector_heat_method/#logarithmic-map)
 
 
 ### Mesh Geodesic Paths
