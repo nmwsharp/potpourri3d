@@ -16,7 +16,7 @@ def validate_mesh(V, F, force_triangular=False, test_indices=False):
     if force_triangular:
         if isinstance(F, np.ndarray) and F.shape[1] != 3:
             raise ValueError("faces must be triangular; dimensions should be Nx3")
-        elif not isinstance(F, np.ndarray) and all(len(polygon) == 3 for polygon in F):
+        elif not isinstance(F, np.ndarray) and any(len(polygon) != 3 for polygon in F):
             raise ValueError("faces must be triangular")
 
     if test_indices:
