@@ -162,22 +162,22 @@ class GeodesicTracer():
         validate_mesh(V, F, force_triangular=True)
         self.bound_tracer = pp3db.GeodesicTracer(V, F)
 
-    def trace_geodesic_from_vertex(self, start_vert, direction_xyz, max_iterations=None):
+    def trace_geodesic_from_vertex(self, start_vert, direction_xyz, max_iterations=None, return_bary=False):
         if max_iterations is None:
             max_iterations = 2**63-1
 
         direction_xyz = np.array(direction_xyz)
 
-        return self.bound_tracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations)
+        return self.bound_tracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations, return_bary)
 
-    def trace_geodesic_from_face(self, start_face, bary_coords, direction_xyz, max_iterations=None):
+    def trace_geodesic_from_face(self, start_face, bary_coords, direction_xyz, max_iterations=None, return_bary=False):
         if max_iterations is None:
             max_iterations = 2**63-1
 
         bary_coords = np.array(bary_coords)
         direction_xyz = np.array(direction_xyz)
 
-        return self.bound_tracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations)
+        return self.bound_tracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations, return_bary)
     
 
 def cotan_laplacian(V, F, denom_eps=0.):

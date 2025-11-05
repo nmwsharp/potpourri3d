@@ -601,7 +601,7 @@ public:
 
   // Generate a geodesic by tracing from a vertex along a tangent direction
   DenseMatrix<double> trace_geodesic_worker(SurfacePoint start_point, Vector2 start_dir,
-                                            size_t max_iters = INVALID_IND) {
+                                            size_t max_iters = INVALID_IND, bool return_bary = false) {
 
     TraceOptions opts;
     opts.includePath = true;
@@ -615,21 +615,61 @@ public:
       throw std::runtime_error("geodesic trace encountered an error");
     }
 
-    // Extract the path and store it in the vector
-    DenseMatrix<double> out(result.pathPoints.size(), 3);
-    for (size_t i = 0; i < result.pathPoints.size(); i++) {
-      Vector3 point = result.pathPoints[i].interpolate(geom->vertexPositions);
-      for (size_t j = 0; j < 3; j++) {
-        out(i, j) = point[j];
+    if (!return_bary){
+      // Extract the path and store it in the vector
+      DenseMatrix<double> out(result.pathPoints.size(), 3);
+      for (size_t i = 0; i < result.pathPoints.size(); i++) {
+        Vector3 point = result.pathPoints[i].interpolate(geom->vertexPositions);
+        for (size_t j = 0; j < 3; j++) {
+          out(i, j) = point[j];
+        }
       }
+      return out;
     }
+
+    // Extract the path as points and barycentric coordinates
+    // [x,y,z,type,id,t1,t2]
+    DenseMatrix<double> out(result.pathPoints.size(), 7); // 7 columns
+    for (size_t i = 0; i < result.pathPoints.size(); i++) {
+        SurfacePoint spoint = result.pathPoints[i];
+        Vector3 point = spoint.interpolate(geom->vertexPositions);
+
+        if (spoint.type == SurfacePointType::Vertex) {
+            out(i, 0) = point.x;
+            out(i, 1) = point.y;
+            out(i, 2) = point.z;
+            out(i, 3) = 0; // type
+            out(i, 4) = spoint.vertex.getIndex();
+            out(i, 5) = -1; // unused
+            out(i, 6) = -1; // unused
+        }
+        else if (spoint.type == SurfacePointType::Edge) {
+            out(i, 0) = point.x;
+            out(i, 1) = point.y;
+            out(i, 2) = point.z;
+            out(i, 3) = 1;
+            out(i, 4) = spoint.edge.getIndex();
+            out(i, 5) = spoint.tEdge;
+            out(i, 6) = -1;
+        }
+        else if (spoint.type == SurfacePointType::Face) {
+            out(i, 0) = point.x;
+            out(i, 1) = point.y;
+            out(i, 2) = point.z;
+            out(i, 3) = 2;
+            out(i, 4) = spoint.face.getIndex();
+            out(i, 5) = spoint.faceCoords.x;
+            out(i, 6) = spoint.faceCoords.y;
+        }
+    }
+
 
     return out;
   }
 
   // Generate a geodesic by tracing from a vertex along a tangent direction
   DenseMatrix<double> trace_geodesic_from_vertex(int64_t startVert, Eigen::Vector3d direction_xyz,
-                                                 size_t max_iters = INVALID_IND) {
+                                                 size_t max_iters = INVALID_IND, bool return_bary = false) {
 
     // Project the input direction onto the tangent basis
     Vertex vert = mesh->vertex(startVert);
@@ -640,12 +680,12 @@ public:
     // magnitude matters! it determines the length
     Vector2 tangent_dir{dot(direction, bX), dot(direction, bY)};
 
-    return trace_geodesic_worker(SurfacePoint(vert), tangent_dir, max_iters);
+    return trace_geodesic_worker(SurfacePoint(vert), tangent_dir, max_iters, return_bary);
   }
 
   // Generate a geodesic by tracing from a face along a tangent direction
   DenseMatrix<double> trace_geodesic_from_face(int64_t startFace, Eigen::Vector3d bary_coords,
-                                               Eigen::Vector3d direction_xyz, size_t max_iters = INVALID_IND) {
+                                               Eigen::Vector3d direction_xyz, size_t max_iters = INVALID_IND, bool return_bary = false) {
 
     // Project the input direction onto the tangent basis
     Face face = mesh->face(startFace);
@@ -657,7 +697,7 @@ public:
     // magnitude matters! it determines the length
     Vector2 tangent_dir{dot(direction, bX), dot(direction, bY)};
 
-    return trace_geodesic_worker(SurfacePoint(face, bary), tangent_dir, max_iters);
+    return trace_geodesic_worker(SurfacePoint(face, bary), tangent_dir, max_iters, return_bary);
   }
 
 private:
@@ -724,7 +764,7 @@ void bind_mesh(py::module& m) {
 
   py::class_<GeodesicTracer>(m, "GeodesicTracer")
         .def(py::init<DenseMatrix<double>, DenseMatrix<int64_t>>())
-        .def("trace_geodesic_from_vertex", &GeodesicTracer::trace_geodesic_from_vertex, py::arg("start_vert"), py::arg("direction_xyz"), py::arg("max_iters"))
-        .def("trace_geodesic_from_face", &GeodesicTracer::trace_geodesic_from_face, py::arg("start_face"), py::arg("bary_coords"), py::arg("direction_xyz"), py::arg("max_iters"));
+        .def("trace_geodesic_from_vertex", &GeodesicTracer::trace_geodesic_from_vertex, py::arg("start_vert"), py::arg("direction_xyz"), py::arg("max_iters"), py::arg("return_bary"))
+        .def("trace_geodesic_from_face", &GeodesicTracer::trace_geodesic_from_face, py::arg("start_face"), py::arg("bary_coords"), py::arg("direction_xyz"), py::arg("max_iters"), py::arg("return_bary"));
 
 }
