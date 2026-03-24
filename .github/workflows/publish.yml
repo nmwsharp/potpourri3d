@@ -16,8 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        # macos-13 is an intel runner, macos-14 is apple silicon
-        os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-latest]
 
     name: Build wheels ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -34,7 +33,7 @@ jobs:
           python -m build --sdist
 
       - name: Run cibuildwheel
-        uses: pypa/cibuildwheel@v2.21 
+        uses: pypa/cibuildwheel@v3.3.1
         with:
           config-file: ".github/workflows/cibuildwheel_config.toml"
       
@@ -68,7 +67,7 @@ jobs:
       id-token: write
     steps:
       - name: Download built wheels artifact # downloads from the jobs storage from the previous step
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4.2.1
         with:
           # omitting the `name: ` field downloads all artifacts from this workflow
           path: dist
