@@ -24,14 +24,19 @@ jobs:
 
     name: Build wheels ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-
+    
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+      
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12' 
 
       - name: Package source distribution
-        if: runner.os == 'Linux'
+        # make sure this only happens on one of the runners, not repeated on all
+        if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install build
           python -m build --sdist
@@ -40,13 +45,27 @@ jobs:
         uses: pypa/cibuildwheel@v3.3.1
         with:
           config-file: ".github/workflows/cibuildwheel_config.toml"
-      
+
+      - name: Copy source distribution into wheelhouse
+        if: matrix.os == 'ubuntu-latest'
+        run: mv dist/*.tar.gz wheelhouse/
+
       # Upload binaries to the github artifact store
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.os }}
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: |
             ./wheelhouse/*.whl 
-            ./wheelhouse/*.tar.gz 
+            ./wheelhouse/*.tar.gz
+          overwrite: true
+
+      # Upload binaries to the github artifact store
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: |
+            ./wheelhouse/*.whl 
+            ./wheelhouse/*.tar.gz
           overwrite: true
