@@ -238,6 +238,75 @@ class TestCore(unittest.TestCase):
         self.assertEqual(len(trace_pts.shape), 2)
         self.assertEqual(trace_pts.shape[1], 3)
 
+
+    def test_geodesic_trace_bary(self):
+        V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
+        tracer = pp3d.GeodesicTracer(V, F)
+
+        # --- Trace from a vertex ---
+        trace_pts, barys = tracer.trace_geodesic_from_vertex(
+            22, 
+            np.array((0.3, 0.5, 0.4)), 
+            return_bary=True
+        )
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+        self._check_bary_structure(trace_pts, barys)
+
+        trace_pts, barys = tracer.trace_geodesic_from_vertex(
+            22, 
+            np.array((0.3, 0.5, 0.4)), 
+            max_iterations=10, 
+            return_bary=True
+        )
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+        self._check_bary_structure(trace_pts, barys)
+
+        # --- Trace from a face ---
+        trace_pts, barys = tracer.trace_geodesic_from_face(
+            31,
+            np.array((0.1, 0.4, 0.5)),
+            np.array((0.3, 0.5, 0.4)),
+            return_bary=True
+        )
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+        self._check_bary_structure(trace_pts, barys)
+
+        trace_pts, barys = tracer.trace_geodesic_from_face(
+            31,
+            np.array((0.1, 0.4, 0.5)),
+            np.array((0.3, 0.5, 0.4)),
+            max_iterations=10,
+            return_bary=True
+        )
+        self.assertEqual(len(trace_pts.shape), 2)
+        self.assertEqual(trace_pts.shape[1], 3)
+        self._check_bary_structure(trace_pts, barys)
+
+
+    def _check_bary_structure(self, trace_pts, barys):
+        """Helper to verify that barycentric return has the expected structure."""
+        # barys should exist and match trace length
+        self.assertTrue(hasattr(barys, '__len__'))
+        self.assertEqual(len(barys), len(trace_pts))
+
+        for entry in barys:
+            # each entry must be a 2-tuple: (primitive_index, coords)
+            self.assertIsInstance(entry, (list, tuple))
+            self.assertEqual(len(entry), 2)
+
+            primitive_id, coords = entry
+
+            # primitive_id: integer index
+            self.assertIsInstance(primitive_id, (int, np.integer))
+
+            # coords: list or ndarray of numbers (possibly empty)
+            self.assertTrue(isinstance(coords, (list, np.ndarray)))
+            for c in coords:
+                self.assertTrue(isinstance(c, (float, np.floating, int, np.integer)))
+                
     def test_point_cloud_distance(self):
 
         P = generate_verts()

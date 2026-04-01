@@ -162,23 +162,43 @@ class GeodesicTracer():
         validate_mesh(V, F, force_triangular=True)
         self.bound_tracer = pp3db.GeodesicTracer(V, F)
 
-    def trace_geodesic_from_vertex(self, start_vert, direction_xyz, max_iterations=None):
+    def trace_geodesic_from_vertex(self, start_vert, direction_xyz, max_iterations=None, return_bary=False):
         if max_iterations is None:
             max_iterations = 2**63-1
 
         direction_xyz = np.array(direction_xyz)
 
-        return self.bound_tracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations)
+        trace_result = self.bound_tracer.trace_geodesic_from_vertex(start_vert, direction_xyz, max_iterations, return_bary)
 
-    def trace_geodesic_from_face(self, start_face, bary_coords, direction_xyz, max_iterations=None):
+        if not return_bary: return trace_result
+        return self.extract_xyz_and_bary(trace_result)
+
+    def trace_geodesic_from_face(self, start_face, bary_coords, direction_xyz, max_iterations=None, return_bary=False):
         if max_iterations is None:
             max_iterations = 2**63-1
 
         bary_coords = np.array(bary_coords)
         direction_xyz = np.array(direction_xyz)
 
-        return self.bound_tracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations)
-    
+        trace_result = self.bound_tracer.trace_geodesic_from_face(start_face, bary_coords, direction_xyz, max_iterations, return_bary)
+
+        if not return_bary: return trace_result
+        return self.extract_xyz_and_bary(trace_result)
+
+    def extract_xyz_and_bary(self,arr):
+            xyz = arr[:, :3].copy()  # Nx3
+
+            types = arr[:, 3].astype(int)
+            ids = arr[:, 4].astype(int)
+            params1 = arr[:, 5]
+            params2 = arr[:, 6]
+
+            bary = [
+                (id_, [] if t == 0 else [params1[i]] if t == 1 else [params1[i], params2[i]])
+                for i, (t, id_) in enumerate(zip(types, ids))
+            ]
+
+            return xyz, bary
 
 def cotan_laplacian(V, F, denom_eps=0.):
     validate_mesh(V, F, force_triangular=True)
