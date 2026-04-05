@@ -70,8 +70,8 @@ Read/write meshes and point clouds from some common formats.
   - Vertices are specified as `(vertex_index, )`
   - Edges are specified as `(edge_index, [t])` where t ∈ [0,1] is the parameter along the edge
   - Faces are specified as `(face_index, [tA, tB])` where `tA`, `tB` (and optionally, `tC`) are barycentric coordinates in the face. If `tC` is not specified, then `tC` is inferred to be `1 - tA - tB`.
-- `MarchingTrianglesSolver(V, F)` construct an instance of a solver class for contouring scalar functions on triangle meshes using the marching triangles algorithm. 
-  - `MarchingTrianglesSolver.marching_triangles(u, isoval=0.)` takes as input a vector `u` representing a scalar function defined on mesh vertices, and an isovalue; returns a list of lists of barycentric points, where each sublist represents a single connected curve component.
+- `MeshMarchingTrianglesSolver(V, F)` construct an instance of a solver class for contouring scalar functions on triangle meshes using the marching triangles algorithm. 
+  - `MeshMarchingTrianglesSolver.marching_triangles(u, isoval=0.)` takes as input a vector `u` representing a scalar function defined on mesh vertices, and an isovalue; returns a list of lists of barycentric points, where each sublist represents a single connected curve component.
   - `marching_triangles(V, F, u, isoval=0.)` is similar to the above, but one-off instead of stateful. Returns a list of lists of barycentric points.
 
 ### Mesh Distance
