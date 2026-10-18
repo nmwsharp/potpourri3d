@@ -39,6 +39,32 @@ def is_nonnegative(A, eps=1e-6):
     return np.all(A.data > -eps)
 
 class TestCore(unittest.TestCase):
+
+    def test_integer_mesh_areas(self):
+        cases = [(np.int8, 16), (np.uint8, 16),
+                 (np.int16, 300), (np.uint16, 300),
+                 (np.int32, 100000), (np.uint32, 100000),
+                 (np.int64, 300), (np.uint64, 300),
+                 (np.float32, 300), (np.float64, 300)]
+        for dtype, side in cases:
+            for winding in [[0, 1, 2], [0, 2, 1]]:
+                with self.subTest(dtype=dtype, winding=winding):
+                    V = np.array([[0, 0, 0], [side, 0, 0], [0, side, 0]], dtype=dtype)
+                    F = np.array([winding])
+                    original = V.copy()
+                    area = 0.5 * side * side
+                    np.testing.assert_allclose(pp3d.face_areas(V, F), [area])
+                    np.testing.assert_allclose(pp3d.vertex_areas(V, F), [area / 3.] * 3)
+                    np.testing.assert_array_equal(V, original)
+
+    def test_integer_mesh_areas_large_offset(self):
+        for dtype in [np.int64, np.uint64]:
+            with self.subTest(dtype=dtype):
+                V = np.array([[0, 0, 0], [3, 0, 0], [0, 3, 0]], dtype=dtype)
+                V += 2**60
+                F = np.array([[0, 1, 2]])
+                np.testing.assert_allclose(pp3d.face_areas(V, F), [4.5])
+                np.testing.assert_allclose(pp3d.vertex_areas(V, F), [1.5] * 3)
     
     def test_write_read_mesh(self):
 
