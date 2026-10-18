@@ -229,8 +229,17 @@ def cotan_laplacian(V, F, denom_eps=0.):
 def face_areas(V, F):
     validate_mesh(V, F, force_triangular=True)
 
+    integer_coordinates = np.issubdtype(V.dtype, np.integer)
+    if integer_coordinates:
+        # Keep coordinate differences exact, including unsigned and wide integers.
+        V = V.astype(np.int64 if V.dtype.itemsize < 8 else object)
+
     vec_ij = V[F[:,1],:] - V[F[:,0],:]
     vec_ik = V[F[:,2],:] - V[F[:,0],:]
+
+    if integer_coordinates:
+        vec_ij = vec_ij.astype(float)
+        vec_ik = vec_ik.astype(float)
 
     areas = 0.5 * np.linalg.norm(np.cross(vec_ij, vec_ik), axis=1)
     
