@@ -153,6 +153,44 @@ class TestCore(unittest.TestCase):
                 self.assertEqual(logmap.shape[0], V.shape[0])
                 self.assertEqual(logmap.shape[1], 2)
     
+    def test_integer_cotan_laplacian(self):
+        cases = [(np.int8, 10), (np.uint8, 10),
+                 (np.int16, 100), (np.uint16, 100),
+                 (np.int32, 100000), (np.uint32, 100000),
+                 (np.int64, 100000), (np.uint64, 100000),
+                 (np.float32, 100), (np.float64, 100)]
+        # Integrated linear basis gradients on a right triangle of sides 3 and 4.
+        expected = np.array([[25. / 24., -2. / 3., -3. / 8.],
+                             [-2. / 3., 2. / 3., 0.],
+                             [-3. / 8., 0., 3. / 8.]])
+        for dtype, scale in cases:
+            V = np.array([[0, 0, 0], [3 * scale, 0, 0],
+                          [0, 4 * scale, 0]], dtype=dtype)
+            original = V.copy()
+            for winding in [[0, 1, 2], [0, 2, 1]]:
+                F = np.array([winding])
+                for eps in [0., 1.]:
+                    with self.subTest(dtype=dtype, winding=winding, eps=eps):
+                        L = pp3d.cotan_laplacian(V, F, denom_eps=eps)
+                        factor = 12. * scale * scale / (12. * scale * scale + eps)
+                        np.testing.assert_allclose(L.toarray(), expected * factor,
+                                                   rtol=1e-6, atol=1e-8)
+                        np.testing.assert_array_equal(V, original)
+
+    def test_integer_cotan_laplacian_large_offset(self):
+        expected = np.array([[25. / 24., -2. / 3., -3. / 8.],
+                             [-2. / 3., 2. / 3., 0.],
+                             [-3. / 8., 0., 3. / 8.]])
+        for dtype in [np.int64, np.uint64]:
+            V = np.array([[0, 0, 0], [3, 0, 0], [0, 4, 0]], dtype=dtype)
+            V += 2**60
+            original = V.copy()
+            for winding in [[0, 1, 2], [0, 2, 1]]:
+                with self.subTest(dtype=dtype, winding=winding):
+                    L = pp3d.cotan_laplacian(V, np.array([winding]))
+                    np.testing.assert_allclose(L.toarray(), expected)
+                    np.testing.assert_array_equal(V, original)
+
     def test_mesh_cotan_laplace(self):
 
         V, F = pp3d.read_mesh(os.path.join(asset_path, "bunny_small.ply"))
