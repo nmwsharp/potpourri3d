@@ -184,6 +184,11 @@ def cotan_laplacian(V, F, denom_eps=0.):
     validate_mesh(V, F, force_triangular=True)
     nV = V.shape[0]
 
+    integer_coordinates = np.issubdtype(V.dtype, np.integer)
+    if integer_coordinates:
+        # Keep coordinate differences exact, including unsigned and wide integers.
+        V = V.astype(np.int64 if V.dtype.itemsize < 8 else object)
+
     mat_i = []
     mat_j = []
     mat_data = []
@@ -195,6 +200,9 @@ def cotan_laplacian(V, F, denom_eps=0.):
         inds_k = F[:,(i+2)%3]
         vec_ki = V[inds_i,:] - V[inds_k,:]
         vec_kj = V[inds_j,:] - V[inds_k,:]
+        if integer_coordinates:
+            vec_ki = vec_ki.astype(float)
+            vec_kj = vec_kj.astype(float)
         dots = np.sum(vec_ki * vec_kj, axis=1)
         cross_mags =  np.linalg.norm(np.cross(vec_ki, vec_kj), axis=1)
         cotans = 0.5 * dots / (cross_mags + denom_eps)
